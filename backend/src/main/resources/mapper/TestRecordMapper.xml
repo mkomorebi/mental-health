@@ -1,0 +1,116 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.TestRecordMapper">
+
+    <select id="metric" resultType="com.example.entity.resp.MetricResp">
+        SELECT
+            department.name,
+            SUM(test_record.score) AS deptScore,
+            COUNT(DISTINCT user.id) AS userNum,
+            SUM(test_record.score) / COUNT(DISTINCT user.id) AS avgScore
+        FROM
+            `test_record`
+                LEFT JOIN `user` ON test_record.user_id = user.id
+                LEFT JOIN department ON user.department_id = department.id
+        WHERE
+            department.name IS NOT NULL
+        GROUP BY
+            department.name;
+    </select>
+
+    <select id="selectAll" resultType="com.example.entity.TestRecord">
+        select test_record.*, user.name as userName, test_paper.title as testPaperName, 
+               doctor.name as doctorName, type.title as typeName, 
+               department.name as departmentName, department.name as department
+        from `test_record`
+        left join test_paper on test_record.test_paper_id = test_paper.id
+        left join user on test_record.user_id = user.id
+        left join doctor on test_record.doctor_id = doctor.id
+        left join type on test_paper.type_id = type.id
+        left join department on user.department_id = department.id
+        <where>
+            <if test="testPaperName != null"> and test_paper.title like concat('%', #{testPaperName}, '%')</if>
+            <if test="userId != null"> and test_record.user_id = #{userId}</if>
+            <if test="doctorId != null"> and test_record.doctor_id = #{doctorId}</if>
+            <if test="userName != null"> and user.name like concat('%', #{userName}, '%')</if>
+            <if test="departmentId != null"> and user.department_id = #{departmentId}</if>
+            <if test="minScore != null"><![CDATA[ and test_record.score >= #{minScore}]]></if>
+            <if test="maxScore != null"><![CDATA[ and test_record.score <= #{maxScore}]]></if>
+        </where>
+        order by id desc
+    </select>
+
+    <delete id="deleteById">
+        delete from `test_record`
+        where id = #{id}
+    </delete>
+
+    <insert id="insert" parameterType="com.example.entity.TestRecord" useGeneratedKeys="true">
+        insert into `test_record`
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">id,</if>
+            <if test="testPaperId != null">test_paper_id,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="doctorId != null">doctor_id,</if>
+            <if test="score != null">score,</if>
+            <if test="result != null">result,</if>
+            <if test="time != null">time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">#{id},</if>
+            <if test="testPaperId != null">#{testPaperId},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="doctorId != null">#{doctorId},</if>
+            <if test="score != null">#{score},</if>
+            <if test="result != null">#{result},</if>
+            <if test="time != null">#{time},</if>
+        </trim>
+    </insert>
+
+    <select id="selectRecentWeek" resultType="com.example.entity.TestRecord">
+        select test_record.*, user.name as userName, test_paper.title as testPaperName, 
+               doctor.name as doctorName, type.title as typeName 
+        from `test_record`
+        left join test_paper on test_record.test_paper_id = test_paper.id
+        left join user on test_record.user_id = user.id
+        left join doctor on test_record.doctor_id = doctor.id
+        left join type on test_paper.type_id = type.id
+        <where>
+            <if test="testPaperName != null"> and test_paper.title like concat('%', #{testPaperName}, '%')</if>
+            <if test="userId != null"> and test_record.user_id = #{userId}</if>
+            <if test="doctorId != null"> and test_record.doctor_id = #{doctorId}</if>
+            <![CDATA[ and test_record.time >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) ]]>
+        </where>
+        order by test_record.time desc
+    </select>
+
+    <select id="selectDoctorRecords" resultType="com.example.entity.TestRecord">
+        SELECT tr.*, user.name as userName, tp.title as testPaperName, 
+               doctor.name as doctorName, type.title as typeName, 
+               department.name as departmentName
+        FROM test_record tr
+        JOIN test_paper tp ON tr.test_paper_id = tp.id
+        LEFT JOIN user ON tr.user_id = user.id
+        LEFT JOIN doctor ON tr.doctor_id = doctor.id
+        LEFT JOIN type ON tp.type_id = type.id
+        LEFT JOIN department ON user.department_id = department.id
+        WHERE tp.doctor_id = #{doctorId}
+        <if test="query.testPaperName != null and query.testPaperName != ''">
+            AND tp.title LIKE CONCAT('%', #{query.testPaperName}, '%')
+        </if>
+        <if test="query.userName != null and query.userName != ''">
+            AND user.name LIKE CONCAT('%', #{query.userName}, '%')
+        </if>
+        <if test="query.departmentId != null">
+            AND user.department_id = #{query.departmentId}
+        </if>
+        <if test="minScore != null">
+            <![CDATA[ AND tr.score >= #{minScore} ]]>
+        </if>
+        <if test="maxScore != null">
+            <![CDATA[ AND tr.score <= #{maxScore} ]]>
+        </if>
+        ORDER BY tr.time DESC
+    </select>
+</mapper>

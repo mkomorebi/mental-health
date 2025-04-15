@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.mapper.DepartMapper">
+
+    <!-- 插入部门 -->
+    <insert id="insert" parameterType="com.example.entity.Department" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO department (name) VALUES (#{name});
+    </insert>
+
+    <!-- 根据 ID 更新部门 -->
+    <update id="updateById" parameterType="com.example.entity.Department">
+        UPDATE department SET name = #{name} WHERE id = #{id};
+    </update>
+
+    <!-- 根据 ID 删除部门 -->
+    <delete id="deleteById" parameterType="int">
+        DELETE FROM department WHERE id = #{id};
+    </delete>
+
+    <!-- 查询某个部门下的所有部门 -->
+    <select id="list" resultType="com.example.entity.Department">
+        SELECT * FROM department
+        <where>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+        </where>
+    </select>
+
+    <!-- 查询所有部门 -->
+    <select id="alllist" resultType="com.example.entity.Department">
+        SELECT * FROM department
+    </select>
+</mapper>

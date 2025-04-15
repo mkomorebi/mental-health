@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.DiagnosisMapper">
+    
+    <resultMap id="BaseResultMap" type="com.example.entity.Diagnosis">
+        <id column="diagnosis_id" property="diagnosisId" />
+        <result column="doctor_id" property="doctorId" />
+        <result column="symptoms" property="symptoms" />
+        <result column="patient_id" property="patientId" />
+        <result column="diagnosis_details" property="diagnosisDetails" />
+        <result column="health_score" property="healthScore" />
+        <result column="diagnosis_date" property="diagnosisDate" />
+    </resultMap>
+    
+    <resultMap id="DiagnosisWithRelationsMap" type="com.example.entity.Diagnosis" extends="BaseResultMap">
+        <association property="doctor" column="doctor_id" 
+                     select="com.example.mapper.DoctorMapper.selectById" />
+        <association property="patient" column="patient_id" 
+                     select="com.example.mapper.UserMapper.selectById" />
+    </resultMap>
+    
+    <resultMap id="DiagnosisWithJoinedFieldsMap" type="com.example.entity.Diagnosis" extends="BaseResultMap">
+        <result column="patient_name" property="patient.name" />
+        <result column="doctor_name" property="doctor.name" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        diagnosis_id, doctor_id, symptoms, patient_id, diagnosis_details, health_score, diagnosis_date
+    </sql>
+    
+    <insert id="insert" parameterType="com.example.entity.Diagnosis" useGeneratedKeys="true" keyProperty="diagnosisId">
+        INSERT INTO diagnosis(doctor_id, symptoms, patient_id, diagnosis_details, health_score, diagnosis_date)
+        VALUES(#{doctorId}, #{symptoms}, #{patientId}, #{diagnosisDetails}, #{healthScore}, #{diagnosisDate})
+    </insert>
+    
+    <select id="selectById" parameterType="java.lang.Integer" resultMap="DiagnosisWithRelationsMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM diagnosis
+        WHERE diagnosis_id = #{diagnosisId}
+    </select>
+    
+    <select id="selectByDoctorId" parameterType="java.lang.Integer" resultMap="DiagnosisWithRelationsMap">
+        SELECT d.*
+        FROM diagnosis d
+        WHERE d.doctor_id = #{doctorId}
+        ORDER BY d.diagnosis_date DESC
+    </select>
+    
+    <select id="selectByPatientId" parameterType="java.lang.Integer" resultMap="DiagnosisWithRelationsMap">
+        SELECT d.*
+        FROM diagnosis d
+        WHERE d.patient_id = #{patientId}
+        ORDER BY d.diagnosis_date DESC
+    </select>
+    
+    <select id="selectAll" resultMap="DiagnosisWithRelationsMap">
+        SELECT d.*
+        FROM diagnosis d
+        ORDER BY d.diagnosis_date DESC
+    </select>
+    
+    <update id="update" parameterType="com.example.entity.Diagnosis">
+        UPDATE diagnosis
+        SET symptoms = #{symptoms},
+            diagnosis_details = #{diagnosisDetails},
+            health_score = #{healthScore},
+            diagnosis_date = #{diagnosisDate}
+        WHERE diagnosis_id = #{diagnosisId}
+    </update>
+    
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM diagnosis
+        WHERE diagnosis_id = #{diagnosisId}
+    </delete>
+    
+    <select id="selectByCondition" resultMap="DiagnosisWithRelationsMap">
+        SELECT d.*
+        FROM diagnosis d
+        LEFT JOIN user u ON d.patient_id = u.id
+        <where>
+            <if test="doctorId != null">
+                AND d.doctor_id = #{doctorId}
+            </if>
+            <if test="patientName != null and patientName != ''">
+                AND u.name LIKE CONCAT('%', #{patientName}, '%')
+            </if>
+            <if test="symptoms != null and symptoms != ''">
+                AND d.symptoms LIKE CONCAT('%', #{symptoms}, '%')
+            </if>
+            <if test="startDate != null">
+                <![CDATA[ AND d.diagnosis_date >= #{startDate} ]]>
+            </if>
+            <if test="endDate != null">
+                <![CDATA[ AND d.diagnosis_date <= #{endDate} ]]>
+            </if>
+        </where>
+        ORDER BY d.diagnosis_date DESC
+    </select>
+    
+</mapper> 
