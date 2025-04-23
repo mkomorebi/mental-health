@@ -41,6 +41,7 @@
                   <div class="px-4 py-3 text-sm text-gray-900">
                     <div class="font-medium">{{ userInfo.name }}</div>
                     <div class="truncate text-gray-500">{{ userInfo.roleName || '系统管理员' }}</div>
+                    <div class="truncate text-gray-500">{{ userInfo.companyName || '未设置公司' }}</div>
                   </div>
                   <!-- <div class="py-1">
                     <a 
@@ -112,8 +113,8 @@
               <el-menu-item index="/admin/userManage">用户信息</el-menu-item>
               <el-menu-item index="/admin/doctor">医生信息</el-menu-item>
               <!-- <el-menu-item index="/admin/doctorAuthentication">医生认证</el-menu-item> -->
-              <!-- <el-menu-item index="/admin/departments">部门管理</el-menu-item> -->
-              <el-menu-item index="/admin/departmentDetails">部门统计数据</el-menu-item>
+              <el-menu-item index="/admin/departments">部门管理</el-menu-item>
+              <!-- <el-menu-item index="/admin/departmentDetails">部门统计数据</el-menu-item> -->
             </el-sub-menu>
             
             <!-- 内容管理 -->
@@ -122,7 +123,6 @@
                 <el-icon><Files /></el-icon>
                 <span>内容管理</span>
               </template>
-              <el-menu-item index="/admin/type">心理分类</el-menu-item>
               <el-menu-item index="/admin/propagate">宣传资料</el-menu-item>
               <el-menu-item index="/admin/sideshow">轮播图</el-menu-item>
             </el-sub-menu>
@@ -133,6 +133,7 @@
                 <el-icon><Document /></el-icon>
                 <span>测试管理</span>
               </template>
+              <!-- <el-menu-item index="/admin/type">题目类型</el-menu-item> -->
               <el-menu-item index="/admin/topic">题库</el-menu-item>
               <el-menu-item index="/admin/testPaper">试卷</el-menu-item>
               <el-menu-item index="/admin/testRecord">测试记录</el-menu-item>

@@ -170,7 +170,8 @@
                 <span class="tool-text text-sm">{{ audioUpload ? '识别中...' : '识别录音' }}</span>
               </button>
               
-              <button 
+              <!-- 情绪分析按钮 -->
+              <!--<button 
                 type="button"
                 @click="analyzeEmotion"
                 :disabled="convLoading"
@@ -186,18 +187,18 @@
                   </svg>
                 </span>
                 <span class="tool-text text-sm">情绪分析</span>
-              </button>
+              </button>-->
             </div>
           </div>
 
           <!-- 在工具按钮区域下方添加 -->
-          <div v-if="lastVoiceEmotion && isDevelopment" class="debug-panel mt-2 p-2 bg-gray-100 rounded-lg text-xs text-gray-600">
+          <!--<div v-if="lastVoiceEmotion && isDevelopment" class="debug-panel mt-2 p-2 bg-gray-100 rounded-lg text-xs text-gray-600">
             <div class="font-bold">情绪分析调试信息:</div>
             <div>检测到情绪: {{ lastVoiceEmotion.emotion }}</div>
             <div>置信度: {{ lastVoiceEmotion.confidence }}</div>
             <div>音频质量: {{ lastVoiceEmotion.quality }}</div>
             <div>时间戳: {{ new Date(lastVoiceEmotion.timestamp).toLocaleTimeString() }}</div>
-          </div>
+          </div>-->
         </div>
       </div>
     </main>

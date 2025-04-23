@@ -5,7 +5,7 @@ import com.example.common.enums.RoleEnum;
 import com.example.entity.Account;
 import com.example.service.AdminService;
 import com.example.service.DoctorService;
-import com.example.service.UserService;
+import com.example.service.EmployeeService;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 import com.auth0.jwt.JWT;
@@ -23,7 +23,7 @@ public class WebController {
     @Resource
     private DoctorService doctorService;
     @Resource
-    private UserService userService;
+    private EmployeeService employeeService;
 
     /**
      * 默认请求接口
@@ -46,7 +46,7 @@ public class WebController {
             loginAccount = doctorService.login(account);
         }
         if (RoleEnum.USER.name().equals(account.getRole())) {
-            loginAccount = userService.login(account);
+            loginAccount = employeeService.login(account);
         }
         return Result.success(loginAccount);
     }
@@ -62,7 +62,7 @@ public class WebController {
         }
         if (RoleEnum.USER.name().equals(account.getRole())) {
             // 确保不调用Account对象上不存在的put方法
-            userService.register(account);
+            employeeService.register(account);
         }
         return Result.success();
     }
@@ -79,7 +79,7 @@ public class WebController {
             doctorService.updatePassword(account);
         }
         if (RoleEnum.USER.name().equals(account.getRole())) {
-            userService.updatePassword(account);
+            employeeService.updatePassword(account);
         }
         return Result.success();
     }
@@ -108,7 +108,7 @@ public class WebController {
                 account = doctorService.selectById(Integer.valueOf(userId));
             }
             if (RoleEnum.USER.name().equals(role)) {
-                account = userService.selectById(Integer.valueOf(userId));
+                account = employeeService.selectById(Integer.valueOf(userId));
             }
             
             if (account == null) {

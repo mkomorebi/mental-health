@@ -3,10 +3,13 @@ import { ElMessage } from "element-plus";
 import router from "@/router/index.ts";
 
 const request = axios.create({
-    baseURL: import.meta.env.VITE_APP_BASE_API,
+    baseURL: import.meta.env.VITE_APP_BASE_API || 'http://localhost:9090',
     timeout: 30000,  // 后台接口超时时间
     withCredentials: true  // 允许跨域请求携带凭证
 })
+
+// 添加调试日志
+console.log('API Base URL:', import.meta.env.VITE_APP_BASE_API || 'http://localhost:9090');
 
 // request 拦截器
 // 可以自请求发送前对请求做一些处理
@@ -21,16 +24,10 @@ request.interceptors.request.use(config => {
         delete config.headers['Content-Type'];
     }
     
-    let user = JSON.parse(localStorage.getItem("xm-user") || '{}');
-    const token = user.token || '';
-    
-    // 只保留必要的日志
-    console.log('请求URL:', config.url);
-    
-    if (token) {
-        // 同时设置两种格式的 token，确保兼容性
-        config.headers['token'] = token;
-        config.headers['Authorization'] = 'Bearer ' + token;
+    const user = JSON.parse(localStorage.getItem('xm-user') || '{}');
+    if (user.token) {
+        config.headers['token'] = user.token;
+        console.log('Request with token:', user.token);
     }
     
     return config;

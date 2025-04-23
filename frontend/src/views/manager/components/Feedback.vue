@@ -94,6 +94,21 @@
           <el-table-column prop="replyName" label="回复人" min-width="100" show-overflow-tooltip />
           <el-table-column prop="replyContent" label="回复内容" min-width="200" show-overflow-tooltip />
           <el-table-column prop="replyTime" label="回复时间" min-width="150" />
+          <el-table-column prop="imageUrls" label="反馈图片" min-width="120">
+            <template #default="scope">
+              <div v-if="scope.row.imageUrls" class="flex gap-1">
+                <el-image 
+                  v-for="(url, index) in scope.row.imageUrls.split(',')"
+                  :key="index"
+                  :src="url"
+                  :preview-src-list="scope.row.imageUrls.split(',')"
+                  fit="cover"
+                  class="w-10 h-10 rounded cursor-pointer"
+                />
+              </div>
+              <span v-else class="text-gray-400">无图片</span>
+            </template>
+          </el-table-column>
           <el-table-column label="操作" width="120" fixed="right">
             <template #default="scope">
               <div class="flex items-center space-x-2">
@@ -152,8 +167,8 @@
       <!-- Reply Dialog -->
       <el-dialog 
         v-model="data.formVisible" 
-        title="反馈回复" 
-        width="500px" 
+        title="反馈详情" 
+        width="600px" 
         destroy-on-close
         :close-on-click-modal="false"
       >
@@ -172,9 +187,29 @@
               {{ data.form.content }}
             </div>
           </div>
-          <div>
+          <div class="mb-3">
             <span class="text-gray-500 text-sm">提交时间：</span>
             <span class="font-medium">{{ data.form.time }}</span>
+          </div>
+          <!-- Add image display section -->
+          <div v-if="data.form.imageUrls" class="mb-3">
+            <span class="text-gray-500 text-sm">上传图片：</span>
+            <div class="flex flex-wrap gap-2 mt-2">
+              <el-image 
+                v-for="(url, index) in data.form.imageUrls.split(',')" 
+                :key="index" 
+                :src="url" 
+                :preview-src-list="data.form.imageUrls.split(',')"
+                class="w-24 h-24 object-cover rounded-md border border-gray-300 cursor-pointer"
+                alt="反馈图片"
+              >
+                <template #error>
+                  <div class="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
+                    <i class="el-icon-picture-outline"></i>
+                  </div>
+                </template>
+              </el-image>
+            </div>
           </div>
         </div>
         
@@ -368,6 +403,11 @@
     load();
   };
   
+  const handleImageError = (index) => {
+    console.error("图片加载失败:", data.form.images[index].url);
+    data.form.images[index].loadError = true;
+  };
+  
   // Load data when component is mounted
   load();
   </script>
@@ -473,5 +513,15 @@
   :deep(.el-button.is-disabled) {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+  
+  /* 添加图片相关样式 */
+  :deep(.el-image) {
+    transition: all 0.3s ease;
+  }
+  
+  :deep(.el-image:hover) {
+    transform: scale(1.05);
+    box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
   }
   </style>

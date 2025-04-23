@@ -1,11 +1,15 @@
 package com.example.entity;
 
+import lombok.Data;
+
 /**
  * 类型类，表示心理分类信息。
  */
+@Data
 public class Type {
     private Integer id; // 类型ID
     private String title; // 类型标题
+    private Integer companyId; // 公司ID
 
     // Getter和Setter方法
     public Integer getId() {

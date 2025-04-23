@@ -1,7 +1,7 @@
 package com.example.mapper;
 
 import com.example.entity.Notice;
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -17,9 +17,10 @@ public interface NoticeMapper {
 
     void deleteById(Integer id); // 根据 ID 删除 Notice 记录
 
-    @Select("select * from `notice` where id = #{id}")
     Notice selectById(Integer id); // 根据 ID 查询 Notice 记录
 
     List<Notice> selectAll(Notice notice); // 查询所有 Notice 记录
-
+    
+    // 添加按公司ID统计公告数量的方法
+    Integer countByCompanyId(@Param("companyId") Integer companyId);
 }

@@ -1,125 +1,63 @@
 package com.example.service;
 
 import com.example.entity.Diagnosis;
-import com.example.mapper.DiagnosisMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.Date;
 import java.util.List;
+import java.time.LocalDate;
 
 /**
- * 诊断业务层服务
- * 处理与诊断相关的业务逻辑
+ * 诊断业务层服务接口
+ * 定义与诊断相关的业务逻辑操作
  */
-@Service
-public class DiagnosisService {
-
-    @Autowired
-    private DiagnosisMapper diagnosisMapper;
-    
-    @Autowired
-    private UserService userService;
-    
-    @Autowired
-    private DoctorService doctorService;
+public interface DiagnosisService {
 
     /**
      * 创建诊断记录
      * @param diagnosis 诊断信息
      * @return 创建的诊断记录
      */
-    @Transactional
-    public Diagnosis createDiagnosis(Diagnosis diagnosis) {
-        // 如果没有设置诊断日期，则设置为当前时间
-        if (diagnosis.getDiagnosisDate() == null) {
-            diagnosis.setDiagnosisDate(new Date());
-        }
-        
-        // 验证医生和患者是否存在
-        if (doctorService.selectById(diagnosis.getDoctorId()) == null) {
-            throw new IllegalArgumentException("医生不存在");
-        }
-        
-        if (userService.selectById(diagnosis.getPatientId()) == null) {
-            throw new IllegalArgumentException("患者不存在");
-        }
-        
-        // 插入诊断记录
-        diagnosisMapper.insert(diagnosis);
-        return diagnosis;
-    }
+    Diagnosis createDiagnosis(Diagnosis diagnosis);
 
     /**
      * 根据ID获取诊断记录
      * @param diagnosisId 诊断ID
      * @return 诊断记录
      */
-    public Diagnosis getDiagnosisById(Integer diagnosisId) {
-        return diagnosisMapper.selectById(diagnosisId);
-    }
+    Diagnosis getDiagnosisById(Integer diagnosisId);
 
     /**
      * 获取医生的所有诊断记录
      * @param doctorId 医生ID
      * @return 诊断记录列表
      */
-    public List<Diagnosis> getDiagnosesByDoctorId(Integer doctorId) {
-        return diagnosisMapper.selectByDoctorId(doctorId);
-    }
+    List<Diagnosis> getDiagnosesByDoctorId(Integer doctorId);
 
     /**
      * 获取患者的所有诊断记录
      * @param patientId 患者ID
      * @return 诊断记录列表
      */
-    public List<Diagnosis> getDiagnosesByPatientId(Integer patientId) {
-        return diagnosisMapper.selectByPatientId(patientId);
-    }
+    List<Diagnosis> getDiagnosesByPatientId(Integer patientId);
 
     /**
      * 更新诊断记录
      * @param diagnosis 诊断信息
      * @return 更新后的诊断记录
      */
-    @Transactional
-    public Diagnosis updateDiagnosis(Diagnosis diagnosis) {
-        // 检查诊断记录是否存在
-        Diagnosis existingDiagnosis = diagnosisMapper.selectById(diagnosis.getDiagnosisId());
-        if (existingDiagnosis == null) {
-            throw new IllegalArgumentException("诊断记录不存在");
-        }
-        
-        // 更新诊断记录
-        diagnosisMapper.update(diagnosis);
-        return diagnosisMapper.selectById(diagnosis.getDiagnosisId());
-    }
+    Diagnosis updateDiagnosis(Diagnosis diagnosis);
 
     /**
      * 删除诊断记录
      * @param diagnosisId 诊断ID
      * @return 是否删除成功
      */
-    @Transactional
-    public boolean deleteDiagnosis(Integer diagnosisId) {
-        // 检查诊断记录是否存在
-        Diagnosis existingDiagnosis = diagnosisMapper.selectById(diagnosisId);
-        if (existingDiagnosis == null) {
-            return false;
-        }
-        
-        // 删除诊断记录
-        return diagnosisMapper.deleteById(diagnosisId) > 0;
-    }
+    boolean deleteDiagnosis(Integer diagnosisId);
 
     /**
      * 获取所有诊断记录
      * @return 诊断记录列表
      */
-    public List<Diagnosis> getAllDiagnoses() {
-        return diagnosisMapper.selectAll();
-    }
+    List<Diagnosis> getAllDiagnoses();
     
     /**
      * 根据健康分数范围查询诊断记录
@@ -127,52 +65,28 @@ public class DiagnosisService {
      * @param maxScore 最大分数
      * @return 诊断记录列表
      */
-    public List<Diagnosis> getDiagnosesByHealthScoreRange(Integer minScore, Integer maxScore) {
-        List<Diagnosis> allDiagnoses = diagnosisMapper.selectAll();
-        return allDiagnoses.stream()
-                .filter(d -> d.getHealthScore() != null && 
-                        d.getHealthScore() >= minScore && 
-                        d.getHealthScore() <= maxScore)
-                .toList();
-    }
+    List<Diagnosis> getDiagnosesByHealthScoreRange(Integer minScore, Integer maxScore);
     
     /**
      * 获取患者最新的诊断记录
      * @param patientId 患者ID
      * @return 最新的诊断记录
      */
-    public Diagnosis getLatestDiagnosisByPatientId(Integer patientId) {
-        List<Diagnosis> diagnoses = diagnosisMapper.selectByPatientId(patientId);
-        if (diagnoses.isEmpty()) {
-            return null;
-        }
-        
-        // 按诊断日期降序排序，返回第一个（最新的）
-        return diagnoses.stream()
-                .sorted((d1, d2) -> d2.getDiagnosisDate().compareTo(d1.getDiagnosisDate()))
-                .findFirst()
-                .orElse(null);
-    }
+    Diagnosis getLatestDiagnosisByPatientId(Integer patientId);
     
     /**
      * 统计医生的诊断数量
      * @param doctorId 医生ID
      * @return 诊断数量
      */
-    public int countDiagnosesByDoctorId(Integer doctorId) {
-        List<Diagnosis> diagnoses = diagnosisMapper.selectByDoctorId(doctorId);
-        return diagnoses.size();
-    }
+    int countDiagnosesByDoctorId(Integer doctorId);
     
     /**
      * 统计患者的诊断数量
      * @param patientId 患者ID
      * @return 诊断数量
      */
-    public int countDiagnosesByPatientId(Integer patientId) {
-        List<Diagnosis> diagnoses = diagnosisMapper.selectByPatientId(patientId);
-        return diagnoses.size();
-    }
+    int countDiagnosesByPatientId(Integer patientId);
 
     /**
      * 根据条件查询诊断记录
@@ -183,25 +97,22 @@ public class DiagnosisService {
      * @param endDate 结束日期
      * @return 诊断记录列表
      */
-    public List<Diagnosis> getDiagnosesByCondition(
+    List<Diagnosis> getDiagnosesByCondition(
             Integer doctorId,
             String patientName,
             String symptoms,
             Date startDate,
             Date endDate
-    ) {
-        List<Diagnosis> diagnoses = diagnosisMapper.selectByCondition(doctorId, patientName, symptoms, startDate, endDate);
-        
-        // 加载关联的医生和患者信息
-        for (Diagnosis diagnosis : diagnoses) {
-            if (diagnosis.getDoctorId() != null) {
-                diagnosis.setDoctor(doctorService.selectById(diagnosis.getDoctorId()));
-            }
-            if (diagnosis.getPatientId() != null) {
-                diagnosis.setPatient(userService.selectById(diagnosis.getPatientId()));
-            }
-        }
-        
-        return diagnoses;
-    }
+    );
+
+    /**
+     * 根据患者ID和日期范围获取诊断记录
+     * 
+     * @param patientId 患者ID
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @param limit 限制返回记录数量，如果为null则不限制
+     * @return 诊断记录列表
+     */
+    List<Diagnosis> getPatientDiagnosesInDateRange(Integer patientId, LocalDate startDate, LocalDate endDate, Integer limit);
 } 

@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +36,7 @@ public class FileController {
 
     private static final Logger log = LoggerFactory.getLogger(FileController.class);
 
-    private static final String filePath = System.getProperty("user.dir") + "/files/"; // 文件存储路径
+    private static final String filePath = System.getProperty("user.dir") + File.separator + "files" + File.separator;
 
     @Value("${fileBaseUrl:}")
     private String fileBaseUrl; // 文件基础URL
@@ -53,6 +52,16 @@ public class FileController {
         }
         
         try {
+            // 确保目录存在
+            File dir = new File(filePath);
+            if (!dir.exists()) {
+                boolean created = dir.mkdirs();
+                if (!created) {
+                    log.error("无法创建目录: " + filePath);
+                    return Result.error("文件上传失败：无法创建目录");
+                }
+            }
+            
             // 获取文件类型
             String contentType = file.getContentType();
             if (contentType == null) {
@@ -69,25 +78,9 @@ public class FileController {
             String uuid = UUID.randomUUID().toString();
             String newFileName = uuid + suffix;
             
-            // 使用绝对路径，确保目录存在
-            String baseDir = System.getProperty("user.dir");
-            String uploadDir = baseDir + File.separator + "files" + File.separator + "Feedbackimgs";
-            File dir = new File(uploadDir);
-            if (!dir.exists()) {
-                boolean created = dir.mkdirs();
-                if (!created) {
-                    log.error("无法创建目录: " + uploadDir);
-                    return Result.error("文件上传失败：无法创建目录");
-                }
-            }
-            
             // 读取文件内容
             byte[] fileBytes = file.getBytes();
             log.info("文件大小: {} 字节", fileBytes.length);
-            
-            // 生成Base64编码的图片数据
-            String base64Image = "data:" + mimeType + ";base64," + 
-                                 Base64.getEncoder().encodeToString(fileBytes);
             
             // 保存文件
             File destFile = new File(dir, newFileName);
@@ -95,17 +88,12 @@ public class FileController {
             FileUtil.writeBytes(fileBytes, destFile);
             
             // 返回可访问的URL
-            String url = fileBaseUrl + "/files/download/" + "Feedbackimgs_" + newFileName;
-            
-            Map<String, Object> result = new HashMap<>();
-            result.put("url", url);
-            result.put("base64", base64Image);
-            result.put("fileName", newFileName);
-            result.put("originalName", originalFilename);
-            result.put("contentType", mimeType);
+            String url = fileBaseUrl + "/files/download/" + newFileName;
             
             log.info("文件上传成功，URL: " + url);
-            return Result.success(result);
+            
+            // 返回结果 - 确保返回格式一致
+            return Result.success(url);
         } catch (IOException e) {
             log.error("文件上传失败", e);
             return Result.error("文件上传失败：" + e.getMessage());
@@ -138,11 +126,20 @@ public class FileController {
                     contentType = "image/png";
                 } else if (actualFileName.toLowerCase().endsWith(".gif")) {
                     contentType = "image/gif";
+                } else if (actualFileName.toLowerCase().endsWith(".pdf")) {
+                    contentType = "application/pdf";
                 }
                 response.setContentType(contentType);
                 
-                // 对于图片，不设置Content-Disposition头，这样浏览器会直接显示而不是下载
-                if (contentType.startsWith("application/")) {
+                // 对于PDF和图片，允许跨域访问
+                if (contentType.startsWith("image/") || contentType.equals("application/pdf")) {
+                    response.setHeader("Access-Control-Allow-Origin", "*");
+                    response.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+                    response.setHeader("Access-Control-Allow-Headers", "*");
+                }
+                
+                // 对于图片和PDF，不设置Content-Disposition头，这样浏览器会直接显示而不是下载
+                if (contentType.startsWith("application/") && !contentType.equals("application/pdf")) {
                     response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(actualFileName, StandardCharsets.UTF_8));
                 }
                 

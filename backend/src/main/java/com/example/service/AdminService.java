@@ -13,6 +13,8 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.List;
 
@@ -108,18 +110,54 @@ public class AdminService {
 
     /**
      * 获取当前登录管理员的公司ID
-     * @return 公司ID
      */
     public Integer getAdminCompanyId() {
-        Integer adminId = TokenUtils.getCurrentAdmin();
+        try {
+            // 从 token 中获取当前用户 ID
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attributes == null) {
+                return null;
+            }
+            
+            String token = attributes.getRequest().getHeader("token");
+            if (token == null || token.isEmpty()) {
+                return null;
+            }
+            
+            String audience = TokenUtils.decodeToken(token).getAudience().get(0);
+            if (audience == null || !audience.contains("-")) {
+                return null;
+            }
+            
+            String[] parts = audience.split("-");
+            if (parts.length < 2 || !"ADMIN".equals(parts[1])) {
+                return null; // 不是管理员
+            }
+            
+            Integer adminId = Integer.valueOf(parts[0]);
+            Admin admin = adminMapper.selectById(adminId);
+            if (admin != null) {
+                System.out.println("AdminService: 获取到管理员公司ID = " + admin.getCompanyId() + " 给管理员ID = " + adminId);
+                return admin.getCompanyId();
+            }
+            
+            return null;
+        } catch (Exception e) {
+            System.err.println("获取管理员公司ID失败: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * 获取管理员的公司ID
+     */
+    public Integer getAdminCompanyId(Integer adminId) {
         if (adminId == null) {
             return null;
         }
-        Admin admin = selectById(adminId);
-        if (admin == null) {
-            throw new CustomException(ResultCodeEnum.TOKEN_ERROR);
-        }
-        return admin.getCompanyId();
+        Admin admin = adminMapper.selectById(adminId);
+        return admin != null ? admin.getCompanyId() : null;
     }
 
 }

@@ -41,7 +41,7 @@
           <div class="flex items-center">
             <template v-if="!data.user.id">
               <button 
-                @click="router.push('/login')"
+                @click="router.push('/employee-login')"
                 class="ml-2 px-4 py-2 text-sm font-medium text-[#2A5C8A] bg-white rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2A5C8A]"
               >
                 登录
@@ -64,7 +64,7 @@
                   alt="用户头像"
                   class="w-8 h-8 rounded-full object-cover border-2 border-white"
                 >
-                <span class="ml-2 hidden sm:inline">{{ data.user.name }}</span>
+                <!-- <span class="ml-2 hidden sm:inline">{{ data.user.name }}</span> -->
                 <svg 
                   xmlns="http://www.w3.org/2000/svg"
                   class="h-4 w-4 ml-1 transition-transform duration-200"
@@ -94,7 +94,8 @@
                     >
                     <div class="ml-3">
                       <p class="text-sm font-medium text-gray-900">{{ data.user.name }}</p>
-                      <p class="text-xs text-gray-500 truncate">{{ data.user.email || '未设置邮箱' }}</p>
+                      <p class="text-xs text-gray-500 truncate">{{ data.user.departmentName || '未设置部门' }}</p>
+                      <p class="text-xs text-gray-500 truncate">{{ data.user.companyName || '未设置公司' }}</p>
                     </div>
                   </div>
                 </div>

@@ -8,6 +8,8 @@ public class Notice {
     private String title; // 通知标题
     private String content; // 通知内容
     private String time; // 通知时间
+    private Integer adminId; // 管理员ID
+    private Integer companyId; // 公司ID
 
     // Getter和Setter方法
     public Integer getId() {
@@ -40,5 +42,21 @@ public class Notice {
 
     public void setTime(String time) {
         this.time = time;
+    }
+    
+    public Integer getAdminId() {
+        return adminId;
+    }
+
+    public void setAdminId(Integer adminId) {
+        this.adminId = adminId;
+    }
+    
+    public Integer getCompanyId() {
+        return companyId;
+    }
+
+    public void setCompanyId(Integer companyId) {
+        this.companyId = companyId;
     }
 }

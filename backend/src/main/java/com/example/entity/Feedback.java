@@ -19,6 +19,8 @@ public class Feedback {
     private String type; // 反馈类型：feature(功能建议)、bug(问题反馈)、question(使用咨询)、other(其他)
     private Integer urgency; // 紧急程度：0-100的整数值
     private String imageUrls; // 图片URL，多个URL用逗号分隔
+    private Integer companyId; // 公司ID，用于实现公司隔离
+    private Integer replyId; // 回复者ID
 
     // Getter和Setter方法
     public Integer getId() {
@@ -124,5 +126,21 @@ public class Feedback {
 
     public void setImageUrls(String imageUrls) {
         this.imageUrls = imageUrls;
+    }
+
+    public Integer getCompanyId() {
+        return companyId;
+    }
+
+    public void setCompanyId(Integer companyId) {
+        this.companyId = companyId;
+    }
+
+    public Integer getReplyId() {
+        return replyId;
+    }
+
+    public void setReplyId(Integer replyId) {
+        this.replyId = replyId;
     }
 }

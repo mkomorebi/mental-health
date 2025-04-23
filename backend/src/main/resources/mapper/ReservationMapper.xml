@@ -4,13 +4,26 @@
 <mapper namespace="com.example.mapper.ReservationMapper">
 
     <select id="selectAll" resultType="com.example.entity.Reservation">
-        select reservation.*, user.name as userName, doctor.name as doctorName from `reservation`
-        left join user on reservation.user_id = user.id
+        select reservation.*, 
+               employee.name as userName, 
+               doctor.name as doctorName 
+        from `reservation`
+        left join employee on reservation.employee_id = employee.id
         left join doctor on reservation.doctor_id = doctor.id
+        left join department on employee.department_id = department.id
         <where>
-            <if test="status != null"> and reservation.status = #{status}</if>
-            <if test="userId != null"> and reservation.user_id = #{userId}</if>
+            <if test="status != null and status != ''"> and reservation.status = #{status}</if>
+            <if test="userId != null"> and reservation.employee_id = #{userId}</if>
             <if test="doctorId != null"> and reservation.doctor_id = #{doctorId}</if>
+            <if test="userName != null and userName != ''"> and employee.name like concat('%', #{userName}, '%')</if>
+            <if test="startDate != null and startDate != ''"> and reservation.time &gt;= concat(#{startDate}, ' 00:00:00')</if>
+            <if test="endDate != null and endDate != ''"> and reservation.time &lt;= concat(#{endDate}, ' 23:59:59')</if>
+            <if test="companyId != null">
+                and (
+                    doctor.company_id = #{companyId}
+                    or department.company_id = #{companyId}
+                )
+            </if>
         </where>
         order by reservation.id desc
     </select>
@@ -24,7 +37,7 @@
         insert into `reservation`
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">id,</if>
-            <if test="userId != null">user_id,</if>
+            <if test="userId != null">employee_id,</if>
             <if test="doctorId != null">doctor_id,</if>
             <if test="start != null">start,</if>
             <if test="end != null">end,</if>
@@ -58,5 +71,27 @@
         </set>
         where id = #{id}
     </update>
+
+    <select id="selectByDoctorIdAndTimeRange" resultType="com.example.entity.Reservation">
+        SELECT 
+            id,
+            employee_id as userId,
+            doctor_id as doctorId,
+            start,
+            end,
+            question,
+            time,
+            status,
+            reason
+        FROM reservation 
+        WHERE doctor_id = #{doctorId} 
+        AND (
+            (start BETWEEN #{start} AND #{end}) 
+            OR (end BETWEEN #{start} AND #{end})
+            OR (#{start} BETWEEN start AND end)
+            OR (#{end} BETWEEN start AND end)
+        )
+        ORDER BY start ASC
+    </select>
 
 </mapper>

@@ -10,6 +10,7 @@
             <if test="title != null"> and topic.title like concat('%', #{title}, '%')</if>
             <if test="typeName != null"> and type.title = #{typeName}</if>
             <if test="typeId != null"> and topic.type_id = #{typeId}</if>
+            <if test="companyId != null"> and topic.company_id = #{companyId}</if>
         </where>
         order by id desc
     </select>
@@ -17,6 +18,7 @@
     <delete id="deleteById">
         delete from `topic`
         where id = #{id}
+        <if test="companyId != null"> and company_id = #{companyId}</if>
     </delete>
 
     <insert id="insert" parameterType="com.example.entity.Topic" useGeneratedKeys="true">
@@ -34,6 +36,7 @@
             <if test="cScore != null">c_score,</if>
             <if test="dScore != null">d_score,</if>
             <if test="score != null">score,</if>
+            <if test="companyId != null">company_id,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null">#{id},</if>
@@ -48,6 +51,7 @@
             <if test="cScore != null">#{cScore},</if>
             <if test="dScore != null">#{dScore},</if>
             <if test="score != null">#{score},</if>
+            <if test="companyId != null">#{companyId},</if>
         </trim>
     </insert>
 
@@ -89,6 +93,7 @@
             </if>
         </set>
         where id = #{id}
+        <if test="companyId != null"> and company_id = #{companyId}</if>
     </update>
 
 </mapper>

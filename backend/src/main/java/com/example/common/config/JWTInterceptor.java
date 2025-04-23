@@ -1,27 +1,25 @@
 package com.example.common.config;
 
-import cn.hutool.core.util.ObjectUtil;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
-import com.example.common.Constants;
 import com.example.common.enums.ResultCodeEnum;
-import com.example.common.enums.RoleEnum;
-import com.example.entity.Account;
+import com.example.entity.Admin;
+import com.example.entity.Doctor;
+import com.example.entity.Employee;
 import com.example.exception.CustomException;
 import com.example.service.AdminService;
 import com.example.service.DoctorService;
-import com.example.service.UserService;
-import jakarta.annotation.Resource;
+import com.example.service.EmployeeService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
+import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
-
-import java.util.Enumeration;
 
 /**
  * JWT拦截器
@@ -41,86 +39,82 @@ import java.util.Enumeration;
  */
 @Component
 public class JWTInterceptor implements HandlerInterceptor {
-    private static final Logger logger = LoggerFactory.getLogger(JWTInterceptor.class);
 
-    @Resource
+    @Autowired
+    private ApplicationContext applicationContext;
+    
     private AdminService adminService;
-    @Resource
     private DoctorService doctorService;
-    @Resource
-    private UserService userService;
+    private EmployeeService employeeService;
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        // 对预检请求直接放行
-        if ("OPTIONS".equals(request.getMethod())) {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        // 如果不是映射到方法直接通过
+        if (!(handler instanceof HandlerMethod)) {
             return true;
         }
-        
-        // 打印所有请求头，用于调试
-        Enumeration<String> headerNames = request.getHeaderNames();
-        while (headerNames.hasMoreElements()) {
-            String headerName = headerNames.nextElement();
-            logger.info("{}={}", headerName, request.getHeader(headerName));
-        }
-        
-        // 1. 从http请求标头里面获取token，如果没有则从请求参数中获取
-        String token = request.getHeader(Constants.TOKEN);
-        
-        if (ObjectUtil.isNull(token)) {
-            // 尝试从Authorization头获取
-            String authHeader = request.getHeader("Authorization");
-            
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                token = authHeader.substring(7); // 去掉"Bearer "前缀
-            }
-        }
-        
-        if (ObjectUtil.isNull(token)) {
-            token = request.getParameter(Constants.TOKEN);
-        }
-        
-        // 2. 如果token为空，抛出token无效异常
-        if (ObjectUtil.isNull(token)) {
-            throw new CustomException(ResultCodeEnum.TOKEN_INVALID_ERROR);
-        }
-        
-        Account account = null;
-        try {
-            // 3. 解析token中的用户信息
-            String audience = JWT.decode(token).getAudience().get(0);
-            
-            String userId = audience.split("-")[0];    // 获取用户ID
-            String role = audience.split("-")[1];      // 获取用户角色
-            
-            // 4. 根据用户角色查询对应数据库表中的用户信息
-            if (RoleEnum.ADMIN.name().equals(role)) {
-                account = adminService.selectById(Integer.valueOf(userId));
-            }
-            if (RoleEnum.DOCTOR.name().equals(role)) {
-                account = doctorService.selectById(Integer.valueOf(userId));
-            }
-            if (RoleEnum.USER.name().equals(role)) {
-                account = userService.selectById(Integer.valueOf(userId));
-            }
 
-        } catch (Exception e) {
-            throw new CustomException(ResultCodeEnum.TOKEN_CHECK_ERROR);
+        // 从 http 请求头中取出 token
+        String token = request.getHeader("token");
+        if (token == null || token.equals("")) {
+            throw new CustomException(ResultCodeEnum.TOKEN_ERROR);
         }
-        
-        // 5. 如果用户不存在，抛出token验证错误
-        if (ObjectUtil.isNull(account)) {
-            throw new CustomException(ResultCodeEnum.TOKEN_CHECK_ERROR);
-        }
-        
+
+        // 获取 token 中的 userId
+        String userId;
+        String role;
         try {
-            // 6. 使用用户密码作为密钥验证token的合法性
-            JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(account.getPassword())).build();
-            jwtVerifier.verify(token);
-        } catch (JWTVerificationException e) {
-            throw new CustomException(ResultCodeEnum.TOKEN_CHECK_ERROR);
+            String userIdAndRole = JWT.decode(token).getAudience().get(0);
+            String[] parts = userIdAndRole.split("-");
+            userId = parts[0];  // 获取用户ID
+            role = parts.length > 1 ? parts[1] : "";  // 获取角色
+        } catch (JWTDecodeException j) {
+            throw new CustomException(ResultCodeEnum.TOKEN_ERROR);
         }
+
+        // 验证 token
+        try {
+            // 根据角色选择不同的验证方式
+            if ("ADMIN".equals(role)) {
+                // 延迟加载 AdminService
+                if (adminService == null) {
+                    adminService = applicationContext.getBean(AdminService.class);
+                }
+                Admin admin = adminService.selectById(Integer.valueOf(userId));
+                if (admin == null) {
+                    throw new CustomException(ResultCodeEnum.TOKEN_ERROR);
+                }
+                JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(admin.getPassword())).build();
+                jwtVerifier.verify(token);
+            } else if ("DOCTOR".equals(role)) {
+                // 延迟加载 DoctorService
+                if (doctorService == null) {
+                    doctorService = applicationContext.getBean(DoctorService.class);
+                }
+                Doctor doctor = doctorService.selectById(Integer.valueOf(userId));
+                if (doctor == null) {
+                    throw new CustomException(ResultCodeEnum.TOKEN_ERROR);
+                }
+                JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(doctor.getPassword())).build();
+                jwtVerifier.verify(token);
+            } else if ("USER".equals(role)) {
+                // 延迟加载 EmployeeService
+                if (employeeService == null) {
+                    employeeService = applicationContext.getBean(EmployeeService.class);
+                }
+                Employee employee = employeeService.selectById(Integer.valueOf(userId));
+                if (employee == null) {
+                    throw new CustomException(ResultCodeEnum.TOKEN_ERROR);
+                }
+                JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(employee.getPassword())).build();
+                jwtVerifier.verify(token);
+            } else {
+                throw new CustomException(ResultCodeEnum.TOKEN_ERROR);
+            }
+        } catch (JWTVerificationException e) {
+            throw new CustomException(ResultCodeEnum.TOKEN_ERROR);
+        }
+
         return true;
     }
-
 }

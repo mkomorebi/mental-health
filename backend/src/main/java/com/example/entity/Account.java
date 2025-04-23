@@ -1,10 +1,12 @@
 package com.example.entity;
 
 import com.alibaba.excel.annotation.ExcelIgnore;
+import lombok.Data;
 
 /**
  * 账户类，表示用户的账户信息。
  */
+@Data
 public class Account {
 
     @ExcelIgnore
@@ -21,6 +23,12 @@ public class Account {
     private String newPassword; // 新密码
     @ExcelIgnore
     private String token; // 令牌
+    @ExcelIgnore
+    private String avatar;
+    @ExcelIgnore
+    private String refreshToken;
+    @ExcelIgnore
+    private Integer companyId; // 添加公司ID字段
 
     public Integer getId() {
         return id;
@@ -76,5 +84,13 @@ public class Account {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Integer getCompanyId() {
+        return companyId;
+    }
+
+    public void setCompanyId(Integer companyId) {
+        this.companyId = companyId;
     }
 }

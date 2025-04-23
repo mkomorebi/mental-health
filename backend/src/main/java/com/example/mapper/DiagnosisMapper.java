@@ -63,19 +63,18 @@ public interface DiagnosisMapper {
     List<Diagnosis> selectAll();
     
     /**
-     * 根据条件查询诊断记录
-     * @param doctorId 医生ID
-     * @param patientName 患者姓名
-     * @param symptoms 症状关键词
+     * 根据条件和日期范围查询诊断记录
+     * 
+     * @param diagnosis 查询条件对象，包含患者ID、医生ID等
      * @param startDate 开始日期
      * @param endDate 结束日期
+     * @param patientName 患者姓名（可选）
      * @return 诊断记录列表
      */
     List<Diagnosis> selectByCondition(
-            @Param("doctorId") Integer doctorId,
-            @Param("patientName") String patientName,
-            @Param("symptoms") String symptoms,
-            @Param("startDate") Date startDate,
-            @Param("endDate") Date endDate
+        @Param("diagnosis") Diagnosis diagnosis, 
+        @Param("startDate") Date startDate, 
+        @Param("endDate") Date endDate,
+        @Param("patientName") String patientName
     );
 } 

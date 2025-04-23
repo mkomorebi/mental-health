@@ -16,6 +16,7 @@ public class Topic {
     private Integer cScore; // C选项分数
     private Integer dScore; // D选项分数
     private Integer score; // 题目总分
+    private Integer companyId; // 公司ID
 
     private String typeName; // 题目类型名称
     private String userAnswer; // 用户答案
@@ -131,5 +132,13 @@ public class Topic {
 
     public void setUserAnswer(String userAnswer) {
         this.userAnswer = userAnswer;
+    }
+
+    public Integer getCompanyId() {
+        return companyId;
+    }
+
+    public void setCompanyId(Integer companyId) {
+        this.companyId = companyId;
     }
 }

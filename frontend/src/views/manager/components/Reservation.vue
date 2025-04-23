@@ -3,11 +3,28 @@
       <!-- Search Card -->
       <div class="bg-white rounded-lg shadow-md p-4 mb-4">
         <div class="flex flex-wrap items-center gap-3">
-          <!-- 搜索区域重新布局 -->
-          <div class="relative flex-grow max-w-xs">
+          <!-- 员工姓名搜索框 -->
+          <div class="relative w-[180px]">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </span>
+            <el-input 
+              v-model="data.userName" 
+              placeholder="请输入员工姓名" 
+              class="pl-10"
+              clearable
+              @keyup.enter="load"
+            />
+          </div>
+          
+          <!-- 预约状态选择 -->
+          <div class="w-[150px]">
             <el-select
               v-model="data.status"
-              placeholder="请选择预约状态"
+              placeholder="预约状态"
               class="w-full"
               clearable
             >
@@ -18,38 +35,62 @@
             </el-select>
           </div>
           
-          <el-button 
-            type="primary" 
-            @click="load"
-            class="bg-[#2A5C8A] hover:bg-[#1e4266] border-[#2A5C8A] hover:border-[#1e4266]"
-          >
-            查询
-          </el-button>
-          <el-button 
-            @click="reset"
-            class="border-gray-300 text-gray-700"
-          >
-            重置
-          </el-button>
-        </div>
-
-        <!-- Action Buttons Row -->
-        <div class="flex flex-wrap items-center gap-3 mt-4 pt-3 border-t border-gray-100" v-if="data.user.role === 'ADMIN'">
-          <el-button 
-            type="danger" 
-            @click="delBatch"
-            :disabled="!data.ids.length"
-            class="bg-red-500 hover:bg-red-600 border-red-500 hover:border-red-600 text-white disabled:bg-gray-300 disabled:border-gray-300"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 6h18"></path>
-              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-              <line x1="10" y1="11" x2="10" y2="17"></line>
-              <line x1="14" y1="11" x2="14" y2="17"></line>
-            </svg>
-            批量删除
-          </el-button>
+          <!-- 日期范围选择器 -->
+          <div class="date-range-wrapper">
+            <el-date-picker
+              v-model="data.dateRange"
+              type="daterange"
+              range-separator="至"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
+              value-format="YYYY-MM-DD"
+              :shortcuts="dateShortcuts"
+            />
+          </div>
+          
+          <!-- 操作按钮 -->
+          <div class="flex gap-2">
+            <el-button 
+              type="primary" 
+              @click="load"
+              class="bg-[#2A5C8A] hover:bg-[#1e4266] border-[#2A5C8A] hover:border-[#1e4266]"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              查询
+            </el-button>
+            <el-button 
+              @click="reset"
+              class="border-gray-300 text-gray-700"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+              </svg>
+              重置
+            </el-button>
+          </div>
+          
+          <!-- 批量删除按钮 (放置在最右侧) -->
+          <div class="ml-auto" v-if="data.user.role === 'ADMIN'">
+            <el-button 
+              type="danger" 
+              @click="delBatch"
+              :disabled="!data.ids.length"
+              class="bg-red-500 hover:bg-red-600 border-red-500 hover:border-red-600 text-white disabled:bg-gray-300 disabled:border-gray-300"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
+              批量删除
+            </el-button>
+          </div>
         </div>
       </div>
   
@@ -139,35 +180,101 @@
       <el-dialog 
         v-model="data.formVisible" 
         title="预约审核" 
-        width="500px" 
+        width="600px" 
         destroy-on-close
         :close-on-click-modal="false"
       >
-        <el-form ref="formRef" :model="data.form" label-width="80px" class="p-4">
-          <el-form-item prop="status" label="审核状态" required>
-            <el-radio-group v-model="data.form.status" class="flex flex-wrap gap-2">
-              <el-radio-button 
-                v-for="status in ['待审核', '审核通过', '审核拒绝', '已结束']"
-                :key="status"
-                :label="status"
-                :value="status"
-                class="flex-1 min-w-[100px]"
+        <el-form ref="formRef" :model="data.form" label-width="100px" class="p-4">
+          <div class="mb-6 bg-blue-50 p-4 rounded-md">
+            <h3 class="text-lg font-medium mb-3 text-blue-700">预约基本信息</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="flex items-center">
+                <span class="text-gray-500 w-20">用户姓名：</span>
+                <span class="font-medium">{{ data.form.userName }}</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-gray-500 w-20">预约时间：</span>
+                <span class="font-medium">{{ data.form.time }}</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-gray-500 w-20">开始时间：</span>
+                <span class="font-medium">{{ data.form.start }}</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-gray-500 w-20">结束时间：</span>
+                <span class="font-medium">{{ data.form.end }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 问题描述 -->
+          <div class="mb-6">
+            <h3 class="text-lg font-medium mb-2">问题描述</h3>
+            <p class="p-3 bg-gray-50 rounded-md text-gray-700">
+              {{ data.form.question || '无问题描述' }}
+            </p>
+          </div>
+          
+          <!-- 审核结果 -->
+          <div class="mt-8">
+            <h3 class="text-lg font-medium mb-3">审核结果</h3>
+            <el-form-item prop="status" label="审核状态" required>
+              <el-radio-group v-model="data.form.status" class="flex flex-wrap gap-3">
+                <el-radio-button label="待审核" class="rounded-md bg-yellow-50">
+                  <span class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-yellow-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="8" x2="12" y2="12"></line>
+                      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    待审核
+                  </span>
+                </el-radio-button>
+                <el-radio-button label="审核通过" class="rounded-md bg-green-50">
+                  <span class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    审核通过
+                  </span>
+                </el-radio-button>
+                <el-radio-button label="审核拒绝" class="rounded-md bg-red-50">
+                  <span class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="15" y1="9" x2="9" y2="15"></line>
+                      <line x1="9" y1="9" x2="15" y2="15"></line>
+                    </svg>
+                    审核拒绝
+                  </span>
+                </el-radio-button>
+                <el-radio-button label="已结束" class="rounded-md bg-gray-50">
+                  <span class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    已结束
+                  </span>
+                </el-radio-button>
+              </el-radio-group>
+            </el-form-item>
+            
+            <el-form-item prop="reason" label="拒绝理由" v-if="data.form.status === '审核拒绝'">
+              <el-input 
+                type="textarea" 
+                :rows="4" 
+                v-model="data.form.reason" 
+                placeholder="请输入拒绝理由"
+                maxlength="200"
+                show-word-limit
               />
-            </el-radio-group>
-          </el-form-item>
-          <el-form-item prop="reason" label="拒绝理由" v-if="data.form.status === '审核拒绝'">
-            <el-input 
-              type="textarea" 
-              :rows="4" 
-              v-model="data.form.reason" 
-              placeholder="请输入拒绝理由"
-              maxlength="200"
-              show-word-limit
-            />
-          </el-form-item>
+            </el-form-item>
+          </div>
         </el-form>
         <template #footer>
-          <div class="flex justify-end gap-2">
+          <div class="flex justify-end gap-3">
             <el-button @click="data.formVisible = false">取 消</el-button>
             <el-button 
               type="primary" 
@@ -175,7 +282,7 @@
               :loading="data.submitting"
               class="bg-[#2A5C8A] hover:bg-[#1e4266] border-[#2A5C8A] hover:border-[#1e4266]"
             >
-              确 定
+              提交审核结果
             </el-button>
           </div>
         </template>
@@ -210,19 +317,69 @@
     pageSize: 10,
     total: 0,
     status: null,
+    userName: '',
+    dateRange: [],
     ids: [],
     loading: false,
     submitting: false
   })
   
+  // 日期快捷选项
+  const dateShortcuts = [
+    {
+      text: '最近一周',
+      value: () => {
+        const end = new Date()
+        const start = new Date()
+        start.setTime(start.getTime() - 3600 * 1000 * 24 * 7)
+        return [start, end]
+      },
+    },
+    {
+      text: '最近一个月',
+      value: () => {
+        const end = new Date()
+        const start = new Date()
+        start.setTime(start.getTime() - 3600 * 1000 * 24 * 30)
+        return [start, end]
+      },
+    },
+    {
+      text: '最近三个月',
+      value: () => {
+        const end = new Date()
+        const start = new Date()
+        start.setTime(start.getTime() - 3600 * 1000 * 24 * 90)
+        return [start, end]
+      },
+    },
+  ]
+  
   const load = () => {
     data.loading = true
+    
+    // 构建查询参数
+    const params = {
+      pageNum: data.pageNum,
+      pageSize: data.pageSize,
+      status: data.status || undefined // 确保空值不会被发送
+    }
+    
+    // 添加员工姓名搜索条件
+    if (data.userName) {
+      params.userName = data.userName
+    }
+    
+    // 添加日期范围搜索条件
+    if (data.dateRange && data.dateRange.length === 2) {
+      params.startDate = data.dateRange[0]
+      params.endDate = data.dateRange[1]
+    }
+    
+    console.log('查询参数:', params)
+    
     request.get('/reservation/selectPage', {
-      params: {
-        pageNum: data.pageNum,
-        pageSize: data.pageSize,
-        status: data.status || undefined // 确保空值不会被发送
-      }
+      params: params
     }).then(res => {
       if (res.code === '200') {
         data.tableData = res.data?.list || []
@@ -371,6 +528,8 @@
   
   const reset = () => {
     data.status = null
+    data.userName = ''
+    data.dateRange = []
     data.pageNum = 1
     load()
   }
@@ -392,12 +551,50 @@
     background-color: #f5f7fa;
   }
   
+  /* 统一按钮样式 */
+  :deep(.el-button) {
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+  }
+  
+  :deep(.el-button:hover:not(:disabled)) {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
   /* Override Element Plus styles to match our design */
   :deep(.el-button--primary) {
     --el-button-bg-color: #2A5C8A;
     --el-button-border-color: #2A5C8A;
     --el-button-hover-bg-color: #1e4266;
     --el-button-hover-border-color: #1e4266;
+  }
+  
+  :deep(.el-button--success) {
+    --el-button-bg-color: #10b981;
+    --el-button-border-color: #10b981;
+    --el-button-hover-bg-color: #059669;
+    --el-button-hover-border-color: #059669;
+  }
+  
+  :deep(.el-button--danger) {
+    --el-button-bg-color: #ef4444;
+    --el-button-border-color: #ef4444;
+    --el-button-hover-bg-color: #dc2626;
+    --el-button-hover-border-color: #dc2626;
+  }
+  
+  :deep(.el-button--default) {
+    --el-button-hover-bg-color: #f3f4f6;
+    --el-button-hover-border-color: #d1d5db;
+  }
+  
+  :deep(.el-button.is-disabled) {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
   
   :deep(.el-pagination.is-background .el-pager li:not(.is-disabled).is-active) {
@@ -443,12 +640,16 @@
     background-color: #f0f7ff !important;
   }
   
-  /* Button hover animations */
-  .el-button {
-    transition: transform 0.2s ease;
+  /* 控制日期选择器宽度 */
+  .date-range-wrapper {
+    width: 320px;
   }
   
-  .el-button:hover:not(:disabled) {
-    transform: translateY(-2px);
+  .date-range-wrapper :deep(.el-date-editor.el-input__wrapper) {
+    width: 100%;
+  }
+  
+  .date-range-wrapper :deep(.el-date-editor--daterange) {
+    width: 100%;
   }
   </style>

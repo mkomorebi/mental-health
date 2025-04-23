@@ -1,7 +1,7 @@
 package com.example.mapper;
 
 import com.example.entity.Propagate;
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -17,14 +17,16 @@ public interface PropagateMapper {
 
     void deleteById(Integer id); // 根据 ID 删除 Propagate 记录
 
-    @Select("select * from `propagate` where id = #{id}")
     Propagate selectById(Integer id); // 根据 ID 查询 Propagate 记录
 
-    @Select("select tag from propagate")
-    List<String> selectAllTags();
+    List<String> selectAllTags(); // 查询所有标签
 
     List<Propagate> selectAll(Propagate propagate); // 查询所有 Propagate 记录
 
-    @Select("select * from propagate order by num desc limit 3")
-    List<Propagate> selectTop3(); // 查询前 3 条 Propagate 记录
+    /**
+     * 查询浏览量最高的三个宣传帖子
+     * @param companyId 公司ID，用于筛选特定公司的宣传
+     * @return 浏览量最高的三个宣传帖子
+     */
+    List<Propagate> selectTop3(@Param("companyId") Integer companyId);
 }

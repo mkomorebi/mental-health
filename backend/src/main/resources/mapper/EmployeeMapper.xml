@@ -1,0 +1,125 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.EmployeeMapper">
+
+    <select id="selectAll" resultType="com.example.entity.Employee">
+        select e.*, d.name as departmentName 
+        from employee e
+        LEFT JOIN department d ON e.department_id = d.id
+        <where>
+            <if test="name != null"> and e.name like concat('%', #{name}, '%')</if>
+            <if test="departmentId != null"> and e.department_id = #{departmentId}</if>
+            <if test="companyId != null"> 
+                and d.company_id = #{companyId}
+            </if>
+        </where>
+    </select>
+
+    <delete id="deleteById">
+        delete from `employee`
+        where id = #{id}
+    </delete>
+
+    <!-- insert into employee (username, password, ...) values ('employee', 'employee', ...) -->
+    <insert id="insert" parameterType="com.example.entity.Employee" useGeneratedKeys="true" keyProperty="id">
+        insert into `employee`
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">id,</if>
+            <if test="username != null">username,</if>
+            <if test="password != null">password,</if>
+            <if test="name != null">name,</if>
+            <if test="phone != null">phone,</if>
+            <if test="email != null">email,</if>
+            <if test="avatar != null">avatar,</if>
+            <if test="role != null">role,</if>
+            <if test="departmentId != null">department_id,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">#{id},</if>
+            <if test="username != null">#{username},</if>
+            <if test="password != null">#{password},</if>
+            <if test="name != null">#{name},</if>
+            <if test="phone != null">#{phone},</if>
+            <if test="email != null">#{email},</if>
+            <if test="avatar != null">#{avatar},</if>
+            <if test="role != null">#{role},</if>
+            <if test="departmentId != null">#{departmentId},</if>
+        </trim>
+    </insert>
+
+    <update id="updateById" parameterType="com.example.entity.Employee">
+        update `employee`
+        <set>
+            <if test="username != null">
+                username = #{username},
+            </if>
+            <if test="password != null">
+                password = #{password},
+            </if>
+            <if test="name != null">
+                name = #{name},
+            </if>
+            <if test="phone != null">
+                phone = #{phone},
+            </if>
+            <if test="email != null">
+                email = #{email},
+            </if>
+            <if test="avatar != null">
+                avatar = #{avatar},
+            </if>
+            <if test="role != null">
+                role = #{role},
+            </if>
+            <if test="departmentId != null">
+                department_id = #{departmentId},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!-- 新增：根据部门ID列表查询员工 -->
+    <select id="selectByDepartmentIds" resultType="com.example.entity.Employee">
+        select e.*, d.name as departmentName 
+        from employee e
+        LEFT JOIN department d ON e.department_id = d.id
+        where e.department_id in
+        <foreach collection="departmentIds" item="deptId" open="(" separator="," close=")">
+            #{deptId}
+        </foreach>
+    </select>
+
+    <!-- 新增：根据员工ID查询员工详细信息 -->
+    <select id="selectById" resultType="com.example.entity.Employee">
+        select e.*, d.company_id 
+        from employee e
+        left join department d on e.department_id = d.id
+        where e.id = #{id}
+    </select>
+
+    <!-- 新增：检查员工是否属于指定公司 -->
+    <select id="checkEmployeeCompany" resultType="java.lang.Integer">
+        select count(1) from employee e
+        join department d on e.department_id = d.id
+        where e.id = #{employeeId} and d.company_id = #{companyId}
+    </select>
+
+    <!-- 修改selectByUsername查询 -->
+    <select id="selectByUsername" resultType="com.example.entity.Employee">
+        select e.*, d.name as departmentName, c.company_name as companyName 
+        from employee e
+        left join department d on e.department_id = d.id
+        left join company c on d.company_id = c.company_id
+        where e.username = #{username}
+    </select>
+
+    <select id="getCompanyIdByEmployeeId" resultType="java.lang.Integer">
+        SELECT c.company_id
+        FROM employee e
+        JOIN department d ON e.department_id = d.id
+        JOIN company c ON d.company_id = c.company_id
+        WHERE e.id = #{employeeId}
+    </select>
+
+</mapper>

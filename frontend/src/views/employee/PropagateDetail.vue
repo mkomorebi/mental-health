@@ -51,9 +51,9 @@
           </div>
           
           <!-- 文章图片 -->
-          <div v-if="data.propagateData.img" class="mb-6 flex justify-center">
+          <!--<div v-if="data.propagateData.img" class="mb-6 flex justify-center">
             <img :src="data.propagateData.img" alt="文章图片" class="rounded-lg max-h-80 object-contain">
-          </div>
+          </div>-->
           
           <!-- 文章内容 -->
           <div class="mt-6 article-content" v-html="data.propagateData.content"></div>

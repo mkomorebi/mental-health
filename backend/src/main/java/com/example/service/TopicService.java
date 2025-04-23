@@ -32,18 +32,18 @@ public class TopicService {
         topicMapper.updateById(topic);
     }
 
-    public void deleteById(Integer id) {
-        topicMapper.deleteById(id);
+    public void deleteById(Integer id, Integer companyId) {
+        topicMapper.deleteById(id, companyId);
     }
 
-    public void deleteBatch(List<Integer> ids) {
+    public void deleteBatch(List<Integer> ids, Integer companyId) {
         for (Integer id : ids) {
-            topicMapper.deleteById(id);
+            topicMapper.deleteById(id, companyId);
         }
     }
 
-    public Topic selectById(Integer id) {
-        return topicMapper.selectById(id);
+    public Topic selectById(Integer id, Integer companyId) {
+        return topicMapper.selectById(id, companyId);
     }
 
     public List<Topic> selectAll(Topic topic) {

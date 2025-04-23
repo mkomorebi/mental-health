@@ -2,11 +2,15 @@ package com.example.entity;
 
 import com.alibaba.excel.annotation.ExcelIgnore;
 import com.alibaba.excel.annotation.ExcelProperty;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * 用户类，表示用户的信息。
  */
-public class User extends Account {
+@Data
+@EqualsAndHashCode(callSuper = true)
+public class Employee extends Account {
 
     /** 主键ID */
     @ExcelProperty(value = "主键", index = 0)
@@ -36,6 +40,8 @@ public class User extends Account {
      */
     @ExcelProperty(value = "公司ID", index = 9)
     private Integer companyId; // 公司ID
+    @ExcelProperty(value = "公司名称", index = 10)
+    private String companyName; // 公司名称
 
     public Integer getId() {
         return id;
@@ -123,5 +129,13 @@ public class User extends Account {
 
     public void setCompanyId(Integer companyId) {
         this.companyId = companyId;
+    }
+
+    public String getCompanyName() {
+        return companyName;
+    }
+
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
     }
 }

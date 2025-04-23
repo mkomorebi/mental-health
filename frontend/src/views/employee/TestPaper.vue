@@ -139,10 +139,18 @@ const data = reactive({
 // 存储所有可用的类型名称
 const allTypeNames = ref([]);
 
-// 初始加载所有测试数据和类型
+// 在 script setup 中添加获取当前用户信息
+const currentUser = JSON.parse(localStorage.getItem('xm-user') || '{}');
+
+// 修改 loadInitialData 方法
 const loadInitialData = () => {
-  // 加载所有测试数据
-  request.get('/testPaper/selectAll').then(res => {
+  // 加载所有已审核通过的试卷数据
+  request.get('/testPaper/selectAll', {
+    params: {
+      status: '审核通过',  // 只查询审核通过的试卷
+      userId: currentUser.id // 添加用户ID参数
+    }
+  }).then(res => {
     if (res.code === '200') {
       data.testPaperData = res.data;
       
@@ -157,11 +165,14 @@ const loadInitialData = () => {
   });
 };
 
+// 修改 loadTestPaper 方法
 const loadTestPaper = (typeName) => {
   data.typeName = typeName;
   request.get('/testPaper/selectAll', {
     params: {
-      typeName: typeName
+      typeName: typeName,
+      status: '审核通过',  // 只查询审核通过的试卷
+      userId: currentUser.id // 添加用户ID参数
     }
   }).then(res => {
     if (res.code === '200') {

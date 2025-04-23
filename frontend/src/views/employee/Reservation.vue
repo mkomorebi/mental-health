@@ -348,6 +348,7 @@
     doctors: [],
     availableTimes: [],
     selectedDoctor: null,
+    user: null,
     form: {
       doctorId: null,
       timeRange: null,
@@ -457,6 +458,53 @@
     );
   };
   
+  // 加载医生列表
+  const loadDoctors = () => {
+    console.log('开始加载医生列表');
+    
+    // 从本地存储获取用户信息
+    const userStr = localStorage.getItem('xm-user');
+    if (!userStr) {
+      ElMessage.error('未找到用户信息，请重新登录');
+      router.push('/login');
+      return;
+    }
+    
+    try {
+      // 解析用户信息
+      const user = JSON.parse(userStr);
+      data.user = user;
+      console.log('当前用户信息:', user);
+      
+      // 直接查询医生，不需要先获取公司ID
+      // 后端会根据当前用户自动获取公司ID
+      request.get('/doctor/selectAll', {
+        params: {
+          status: '审批通过'  // 确保与后端状态值一致
+        }
+      }).then(res => {
+        console.log('医生列表响应:', res);
+        if (res.code === '200') {
+          data.doctors = res.data;
+          console.log('获取到的医生列表:', data.doctors);
+          if (data.doctors.length === 0) {
+            ElMessage.warning('当前公司暂无可预约的医生');
+          }
+        } else {
+          console.error('获取医生列表失败:', res.msg);
+          ElMessage.error(res.msg || '获取医生列表失败');
+        }
+      }).catch(err => {
+        console.error('加载医生列表出错:', err);
+        ElMessage.error('加载医生列表失败，请稍后重试');
+      });
+    } catch (error) {
+      console.error('解析用户信息出错:', error);
+      ElMessage.error('用户信息无效，请重新登录');
+      router.push('/login');
+    }
+  };
+  
   // 打开新增预约对话框
   const openAddDialog = () => {
     data.dialogVisible = true;
@@ -471,23 +519,15 @@
     loadDoctors();
   };
   
-  // 加载医生列表
-  const loadDoctors = () => {
-    request.get('/doctor/selectAll').then(res => {
-      if (res.code === '200') {
-        data.doctors = res.data;
-      } else {
-        ElMessage.error(res.msg || '获取医生列表失败');
-      }
-    });
-  };
-  
   // 处理医生选择变化
   const handleDoctorChange = () => {
     if (data.form.doctorId) {
-      // 获取所选医生的可用时间段
+      // 获取所选医生的可用时间段，需要排除已被预约的时间
       request.get('/doctor/availableTimes', {
-        params: { doctorId: data.form.doctorId }
+        params: { 
+          doctorId: data.form.doctorId,
+          date: new Date().toISOString().split('T')[0]  // 传入当前日期
+        }
       }).then(res => {
         if (res.code === '200') {
           data.availableTimes = res.data;
@@ -500,7 +540,7 @@
       // 获取医生详细信息
       request.get(`/doctor/selectById/${data.form.doctorId}`).then(res => {
         if (res.code === '200') {
-          data.selectedDoctor = res.data; // 保存医生信息
+          data.selectedDoctor = res.data;
         } else {
           ElMessage.error(res.msg || '获取医生信息失败');
         }
@@ -508,7 +548,7 @@
     } else {
       data.availableTimes = [];
       data.form.timeRange = null;
-      data.selectedDoctor = null; // 清空医生信息
+      data.selectedDoctor = null;
     }
   };
   

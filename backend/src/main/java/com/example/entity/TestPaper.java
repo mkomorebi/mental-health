@@ -1,10 +1,12 @@
 package com.example.entity;
 
 import java.util.List;
+import lombok.Data;
 
 /**
  * 试卷类，表示试卷信息。
  */
+@Data
 public class TestPaper {
     private Integer id; // 试卷ID
     private String title; // 试卷标题
@@ -37,6 +39,7 @@ public class TestPaper {
     private Integer cLeft; // C选项左边界
     private Integer cRight; // C选项右边界
     private Integer flag; // 标记
+    private Integer companyId; // 添加公司ID字段
 
     // Getter和Setter方法
     public Integer getId() {
@@ -277,5 +280,13 @@ public class TestPaper {
 
     public void setFlag(Integer flag) {
         this.flag = flag;
+    }
+
+    public Integer getCompanyId() {
+        return companyId;
+    }
+
+    public void setCompanyId(Integer companyId) {
+        this.companyId = companyId;
     }
 }

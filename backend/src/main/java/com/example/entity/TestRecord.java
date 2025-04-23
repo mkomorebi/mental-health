@@ -29,4 +29,6 @@ public class TestRecord {
     private Integer maxScore; // 最高分数
 
     private String department;
+
+    private Integer companyId; // 添加公司ID字段
 }

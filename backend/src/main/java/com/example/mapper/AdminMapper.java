@@ -1,7 +1,6 @@
 package com.example.mapper;
 
 import com.example.entity.Admin;
-import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -17,10 +16,8 @@ public interface AdminMapper {
 
     void deleteById(Integer id); // 根据 ID 删除 Admin 记录
 
-    @Select("select * from `admin` where id = #{id}")
     Admin selectById(Integer id); // 根据 ID 查询 Admin 记录
 
-    @Select("select * from `admin` where username = #{username}")
     Admin selectByUsername(String username); // 根据用户名查询 Admin 记录
 
     List<Admin> selectAll(Admin admin); // 查询所有 Admin 记录

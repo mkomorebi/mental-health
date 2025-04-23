@@ -7,36 +7,51 @@
         SELECT
             department.name,
             SUM(test_record.score) AS deptScore,
-            COUNT(DISTINCT user.id) AS userNum,
-            SUM(test_record.score) / COUNT(DISTINCT user.id) AS avgScore
+            COUNT(DISTINCT employee.id) AS userNum,
+            COUNT(DISTINCT test_record.user_id) AS testedUserNum,
+            COUNT(test_record.id) AS testCount,
+            CASE WHEN COUNT(DISTINCT test_record.user_id) > 0 
+                 THEN SUM(test_record.score) / COUNT(test_record.id) 
+                 ELSE 0 END AS avgScore
         FROM
-            `test_record`
-                LEFT JOIN `user` ON test_record.user_id = user.id
-                LEFT JOIN department ON user.department_id = department.id
+            `department`
+        LEFT JOIN 
+            `employee` ON employee.department_id = department.id
+        LEFT JOIN 
+            `test_record` ON test_record.user_id = employee.id 
+            AND test_record.time >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) -- 只考虑最近30天的记录
         WHERE
             department.name IS NOT NULL
+            <if test="companyId != null">
+                AND department.company_id = #{companyId}
+            </if>
         GROUP BY
-            department.name;
+            department.name
+        ORDER BY
+            avgScore DESC;
     </select>
 
     <select id="selectAll" resultType="com.example.entity.TestRecord">
-        select test_record.*, user.name as userName, test_paper.title as testPaperName, 
+        select test_record.*, employee.name as userName, test_paper.title as testPaperName,
                doctor.name as doctorName, type.title as typeName, 
-               department.name as departmentName, department.name as department
+               department.name as departmentName, department.name as department,
+               employee.department_id as departmentId,
+               department.company_id as companyId
         from `test_record`
         left join test_paper on test_record.test_paper_id = test_paper.id
-        left join user on test_record.user_id = user.id
+        left join employee on test_record.user_id = employee.id
         left join doctor on test_record.doctor_id = doctor.id
         left join type on test_paper.type_id = type.id
-        left join department on user.department_id = department.id
+        left join department on employee.department_id = department.id
         <where>
             <if test="testPaperName != null"> and test_paper.title like concat('%', #{testPaperName}, '%')</if>
             <if test="userId != null"> and test_record.user_id = #{userId}</if>
             <if test="doctorId != null"> and test_record.doctor_id = #{doctorId}</if>
-            <if test="userName != null"> and user.name like concat('%', #{userName}, '%')</if>
-            <if test="departmentId != null"> and user.department_id = #{departmentId}</if>
+            <if test="userName != null"> and employee.name like concat('%', #{userName}, '%')</if>
+            <if test="departmentId != null"> and employee.department_id = #{departmentId}</if>
             <if test="minScore != null"><![CDATA[ and test_record.score >= #{minScore}]]></if>
             <if test="maxScore != null"><![CDATA[ and test_record.score <= #{maxScore}]]></if>
+            <if test="companyId != null"> and department.company_id = #{companyId}</if>
         </where>
         order by id desc
     </select>
@@ -69,11 +84,11 @@
     </insert>
 
     <select id="selectRecentWeek" resultType="com.example.entity.TestRecord">
-        select test_record.*, user.name as userName, test_paper.title as testPaperName, 
+        select test_record.*, employee.name as userName, test_paper.title as testPaperName,
                doctor.name as doctorName, type.title as typeName 
         from `test_record`
         left join test_paper on test_record.test_paper_id = test_paper.id
-        left join user on test_record.user_id = user.id
+        left join employee on test_record.user_id = employee.id
         left join doctor on test_record.doctor_id = doctor.id
         left join type on test_paper.type_id = type.id
         <where>
@@ -86,24 +101,28 @@
     </select>
 
     <select id="selectDoctorRecords" resultType="com.example.entity.TestRecord">
-        SELECT tr.*, user.name as userName, tp.title as testPaperName, 
+        SELECT tr.*, employee.name as userName, tp.title as testPaperName,
                doctor.name as doctorName, type.title as typeName, 
-               department.name as departmentName
+               department.name as departmentName,
+               department.company_id as companyId
         FROM test_record tr
         JOIN test_paper tp ON tr.test_paper_id = tp.id
-        LEFT JOIN user ON tr.user_id = user.id
+        LEFT JOIN employee ON tr.user_id = employee.id
         LEFT JOIN doctor ON tr.doctor_id = doctor.id
         LEFT JOIN type ON tp.type_id = type.id
-        LEFT JOIN department ON user.department_id = department.id
+        LEFT JOIN department ON employee.department_id = department.id
         WHERE tp.doctor_id = #{doctorId}
+        <if test="query.companyId != null">
+            AND department.company_id = #{query.companyId}
+        </if>
         <if test="query.testPaperName != null and query.testPaperName != ''">
             AND tp.title LIKE CONCAT('%', #{query.testPaperName}, '%')
         </if>
         <if test="query.userName != null and query.userName != ''">
-            AND user.name LIKE CONCAT('%', #{query.userName}, '%')
+            AND employee.name LIKE CONCAT('%', #{query.userName}, '%')
         </if>
         <if test="query.departmentId != null">
-            AND user.department_id = #{query.departmentId}
+            AND employee.department_id = #{query.departmentId}
         </if>
         <if test="minScore != null">
             <![CDATA[ AND tr.score >= #{minScore} ]]>
@@ -113,4 +132,52 @@
         </if>
         ORDER BY tr.time DESC
     </select>
+
+    <select id="getDepartmentStats" resultMap="departmentStatsResultMap">
+        SELECT 
+            d.id AS department_id,
+            d.name AS department_name,
+            COUNT(DISTINCT e.id) AS user_num,
+            tp.id AS paper_id,
+            tp.title AS paper_title,
+            tp.time AS publish_time,
+            COUNT(tr.id) AS completed_count,
+            AVG(tr.score) AS avg_score
+        FROM 
+            department d
+        LEFT JOIN 
+            employee e ON d.id = e.department_id
+        LEFT JOIN 
+            test_record tr ON e.id = tr.user_id
+        LEFT JOIN 
+            test_paper tp ON tr.test_paper_id = tp.id
+        WHERE 
+            d.company_id = #{companyId}
+            <if test="departmentName != null and departmentName != ''">
+                AND d.name LIKE CONCAT('%', #{departmentName}, '%')
+            </if>
+            <if test="paperTitle != null and paperTitle != ''">
+                AND tp.title LIKE CONCAT('%', #{paperTitle}, '%')
+            </if>
+            <if test="publishTime != null and publishTime != ''">
+                AND DATE(tp.time) = #{publishTime}
+            </if>
+        GROUP BY 
+            d.id, d.name, tp.id, tp.title, tp.time
+        ORDER BY 
+            d.id, tp.time DESC
+    </select>
+
+    <resultMap id="departmentStatsResultMap" type="com.example.entity.resp.DepartmentStatsResp">
+        <id property="departmentId" column="department_id"/>
+        <result property="departmentName" column="department_name"/>
+        <result property="userNum" column="user_num"/>
+        <collection property="testPapers" ofType="com.example.entity.resp.TestPaperStatsResp">
+            <id property="paperId" column="paper_id"/>
+            <result property="paperTitle" column="paper_title"/>
+            <result property="publishTime" column="publish_time"/>
+            <result property="completionRate" column="completion_rate"/>
+            <result property="avgScore" column="avg_score"/>
+        </collection>
+    </resultMap>
 </mapper>

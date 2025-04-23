@@ -1,498 +1,738 @@
 <template>
   <div class="department-stats-container">
-    <!-- Search and Action Card -->
-    <div class="bg-white rounded-lg shadow-md p-4 mb-4">
-      <!-- Search Row -->
-      <div class="flex flex-wrap items-center gap-3">
-        <div class="relative flex-grow max-w-xs">
-          <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-          </span>
-          <el-input 
-            v-model="data.departmentName" 
-            placeholder="请输入部门名称" 
-            class="pl-10"
+    <!-- 搜索区域 -->
+    <div class="search-card">
+      <div class="search-row">
+        <div class="search-item">
+          <el-input v-model="searchParams.departmentName" placeholder="部门名称" clearable>
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </div>
+        <div class="search-item">
+          <el-input v-model="searchParams.paperTitle" placeholder="问卷名称" clearable>
+            <template #prefix>
+              <el-icon><Document /></el-icon>
+            </template>
+          </el-input>
+        </div>
+        <div class="search-item">
+          <el-date-picker
+            v-model="searchParams.timeRange"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD"
           />
         </div>
-        
-        <div class="relative flex-grow max-w-xs">
-          <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-              <polyline points="10 9 9 9 8 9"></polyline>
-            </svg>
-          </span>
-          <el-input 
-            v-model="data.paperTitle" 
-            placeholder="请输入问卷名称" 
-            class="pl-10"
-          />
-        </div>
-        
-        <el-date-picker
-          v-model="data.publishTime"
-          type="date"
-          placeholder="选择发布时间"
-          value-format="YYYY-MM-DD"
-          class="flex-grow max-w-xs"
-        />
-        
-        <div class="flex items-center gap-2">
-          <el-button 
-            type="primary" 
-            @click="load"
-            class="bg-[#2A5C8A] hover:bg-[#1e4266] border-[#2A5C8A] hover:border-[#1e4266]"
-          >
-            查询
-          </el-button>
-          
-          <el-button 
-            @click="reset"
-            class="border-gray-300 text-gray-700"
-          >
-            重置
-          </el-button>
-          
-          <el-button 
-            type="success" 
-            @click="downLoad"
-            class="bg-green-500 hover:bg-green-600 border-green-500 hover:border-green-600 text-white disabled:bg-green-300 disabled:border-green-300"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            导出
-          </el-button>
+        <div class="search-actions">
+          <el-button type="primary" @click="loadData" :icon="Search">查询</el-button>
+          <el-button @click="resetSearch" :icon="Refresh">重置</el-button>
+          <el-button type="success" @click="exportData" :icon="Download">导出</el-button>
         </div>
       </div>
     </div>
 
-    <!-- Stats Cards -->
-    <div v-if="flattenedTableData.length > 0" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-      <div class="bg-white rounded-lg shadow-md p-4">
-        <div class="flex items-center">
-          <div class="flex-shrink-0 bg-blue-50 p-3 rounded-lg mr-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-          </div>
-          <div>
-            <div class="text-gray-500 text-sm">总用户数</div>
-            <div class="text-xl font-bold">{{ totalUsers }}</div>
-          </div>
+    <!-- 统计卡片 -->
+    <div class="stats-cards">
+      <div class="stat-card" v-for="card in statCards" :key="card.title" :style="{borderLeft: `4px solid ${card.color}`}">
+        <div class="stat-icon" :style="{backgroundColor: `${card.color}20`}">
+          <component :is="card.icon" :style="{color: card.color}" />
         </div>
-      </div>
-      
-      <div class="bg-white rounded-lg shadow-md p-4">
-        <div class="flex items-center">
-          <div class="flex-shrink-0 bg-purple-50 p-3 rounded-lg mr-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-              <polyline points="10 9 9 9 8 9"></polyline>
-            </svg>
-          </div>
-          <div>
-            <div class="text-gray-500 text-sm">问卷总数</div>
-            <div class="text-xl font-bold">{{ totalTestPapers }}</div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="bg-white rounded-lg shadow-md p-4">
-        <div class="flex items-center">
-          <div class="flex-shrink-0 bg-green-50 p-3 rounded-lg mr-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-            </svg>
-          </div>
-          <div>
-            <div class="text-gray-500 text-sm">部门数量</div>
-            <div class="text-xl font-bold">{{ departmentCount }}</div>
+        <div class="stat-content">
+          <div class="stat-title">{{ card.title }}</div>
+          <div class="stat-value">{{ card.value }}</div>
+          <div class="stat-trend" v-if="card.trend !== undefined">
+            <span :style="{color: card.trend >= 0 ? '#f56c6c' : '#67c23a'}">
+              {{ card.trend >= 0 ? '↑' : '↓' }} {{ Math.abs(card.trend) }}%
+            </span>
+            较上月
           </div>
         </div>
       </div>
     </div>
-    
-    <!-- Table Card -->
-    <div class="bg-white rounded-lg shadow-md p-4 mb-4 overflow-hidden">
-      <el-table 
-        :data="flattenedTableData" 
+
+    <!-- 图表区域 -->
+    <div class="chart-area">
+      <div class="chart-card">
+        <div class="chart-title">部门健康分布</div>
+        <div ref="healthChart" class="chart-container"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">高风险用户分布</div>
+        <div ref="riskChart" class="chart-container"></div>
+      </div>
+    </div>
+
+    <!-- 部门表格 -->
+    <div class="table-card">
+      <el-table
+        :data="tableData"
+        v-loading="loading"
         stripe
         border
-        class="w-full"
-        v-loading="data.loading"
-        element-loading-text="加载中..."
-        element-loading-background="rgba(255, 255, 255, 0.8)"
+        style="width: 100%"
+        @row-click="handleRowClick"
       >
-        <el-table-column prop="departmentName" label="部门名称" min-width="150">
-          <template #default="scope">
-            <div class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-[#2A5C8A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-              </svg>
-              <span class="font-medium">{{ scope.row.departmentName }}</span>
+        <el-table-column type="expand">
+          <template #default="{row}">
+            <div class="questionnaire-table">
+              <el-table :data="row.testPapers" border>
+                <el-table-column prop="title" label="问卷名称" min-width="180">
+                  <template #default="{row}">
+                    <div class="paper-title">
+                      <el-icon><Document /></el-icon>
+                      <span>{{ row.title }}</span>
+                    </div>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="publishTime" label="发布时间" width="150" align="center">
+                  <template #default="{row}">
+                    {{ formatDate(row.publishTime) }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="completionRate" label="完成率" width="120" align="center">
+                  <template #default="{row}">
+                    <el-progress 
+                      :percentage="row.completionRate * 100" 
+                      :color="getRateColor(row.completionRate)"
+                      :show-text="false"
+                    />
+                    <span class="rate-text">{{ (row.completionRate * 100).toFixed(1) }}%</span>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="avgScore" label="平均分" width="120" align="center">
+                  <template #default="{row}">
+                    <span :style="{color: getScoreColor(row.avgScore, row.totalScore)}">
+                      {{ row.avgScore.toFixed(1) }}
+                    </span>
+                    / {{ row.totalScore }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="highRiskCount" label="高风险" width="100" align="center">
+                  <template #default="{row}">
+                    <el-tag type="danger" v-if="row.highRiskCount > 0">
+                      {{ row.highRiskCount }}
+                    </el-tag>
+                    <span v-else>-</span>
+                  </template>
+                </el-table-column>
+              </el-table>
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="userNum" label="用户数" width="120" align="center">
-          <template #default="scope">
-            <div class="flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-              </svg>
-              <span class="font-medium">{{ scope.row.userNum || 0 }}</span>
+        
+        <el-table-column prop="name" label="部门名称" min-width="180">
+          <template #default="{row}">
+            <div class="department-name">
+              <el-icon><OfficeBuilding /></el-icon>
+              <span>{{ row.name }}</span>
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="paperTitle" label="问卷名称" min-width="180">
-          <template #default="scope">
-            <div class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-                <polyline points="10 9 9 9 8 9"></polyline>
-              </svg>
-              <span class="font-medium">{{ scope.row.paperTitle }}</span>
+        
+        <el-table-column prop="userCount" label="用户数" width="120" align="center">
+          <template #default="{row}">
+            <div class="user-count">
+              <el-icon><User /></el-icon>
+              <span>{{ row.userCount }}</span>
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="publishTime" label="发布时间" width="180" align="center">
-          <template #default="scope">
-            <div class="flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
-              </svg>
-              <span class="font-medium">{{ formatDate(scope.row.publishTime) }}</span>
+        
+        <el-table-column prop="testPaperCount" label="问卷数" width="120" align="center">
+          <template #default="{row}">
+            <div class="paper-count">
+              <el-icon><Document /></el-icon>
+              <span>{{ row.testPaperCount }}</span>
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="completionRate" label="完成率" width="120" align="center">
-          <template #default="scope">
-            <div class="flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-              </svg>
-              <span class="font-medium">{{ formatPercentage(scope.row.completionRate) }}</span>
-            </div>
+        
+        <el-table-column prop="completionRate" label="完成率" width="150" align="center">
+          <template #default="{row}">
+            <el-progress 
+              :percentage="row.completionRate * 100" 
+              :color="getRateColor(row.completionRate)"
+            />
           </template>
         </el-table-column>
+        
         <el-table-column prop="avgScore" label="平均分" width="120" align="center">
-          <template #default="scope">
-            <div class="flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-              </svg>
-              <span class="font-medium">{{ formatScore(scope.row.avgScore) }}</span>
-            </div>
+          <template #default="{row}">
+            <span :style="{color: getScoreColor(row.avgScore, 100)}">
+              {{ row.avgScore.toFixed(1) }}
+            </span>
+          </template>
+        </el-table-column>
+        
+        <el-table-column prop="highRiskRate" label="高风险率" width="150" align="center">
+          <template #default="{row}">
+            <el-progress 
+              :percentage="row.highRiskRate * 100" 
+              :color="getRiskColor(row.highRiskRate)"
+              :show-text="false"
+            />
+            <span class="rate-text">{{ (row.highRiskRate * 100).toFixed(1) }}%</span>
           </template>
         </el-table-column>
       </el-table>
       
-      <!-- Empty State -->
-      <div v-if="!data.loading && flattenedTableData.length === 0" class="py-8 text-center">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="8" x2="12" y2="12"></line>
-          <line x1="12" y1="16" x2="12.01" y2="16"></line>
-        </svg>
-        <p class="mt-2 text-gray-500">暂无部门统计数据</p>
+      <!-- 空状态 -->
+      <div v-if="!loading && tableData.length === 0" class="empty-state">
+        <el-icon><DataLine /></el-icon>
+        <div>暂无数据</div>
       </div>
     </div>
 
-    <!-- 添加分页组件 -->
-    <div v-if="flattenedTableData.length > 0" class="bg-white rounded-lg shadow-md p-4 mt-4">
+    <!-- 分页 -->
+    <div class="pagination">
       <el-pagination
-        v-model:current-page="data.pageNum"
-        v-model:page-size="data.pageSize"
+        v-model:current-page="pagination.current"
+        v-model:page-size="pagination.size"
+        :total="pagination.total"
         :page-sizes="[10, 20, 50, 100]"
-        :total="data.total"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
         layout="total, sizes, prev, pager, next, jumper"
         background
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
       />
     </div>
   </div>
 </template>
 
 <script setup>
-import { saveAs } from 'file-saver';
-import { reactive, computed } from "vue";
-import request from "@/utils/request.js";
-import { ElMessage } from "element-plus";
+import { ref, reactive, onMounted, nextTick, onUnmounted } from 'vue'
+import * as echarts from 'echarts'
+import { 
+  Search, Refresh, Download, Document, 
+  OfficeBuilding, User, DataLine 
+} from '@element-plus/icons-vue'
+import request from '@/utils/request'
 
-const data = reactive({
-  tableData: [],
-  loading: false,
+// 搜索参数
+const searchParams = reactive({
   departmentName: '',
   paperTitle: '',
-  publishTime: '',
-  pageNum: 1,
-  pageSize: 10,
+  timeRange: []
+})
+
+// 分页参数
+const pagination = reactive({
+  current: 1,
+  size: 10,
   total: 0
-});
+})
 
-// 扁平化数据，将每个部门的问卷数据展开为单独的行
-const flattenedTableData = computed(() => {
-  return data.tableData.reduce((acc, department) => {
-    if (department.testPapers && department.testPapers.length > 0) {
-      department.testPapers.forEach(paper => {
-        acc.push({
-          departmentId: department.departmentId,
-          departmentName: department.departmentName,
-          userNum: department.userNum,
-          paperId: paper.paperId,
-          paperTitle: paper.paperTitle,
-          publishTime: paper.publishTime,
-          completionRate: paper.completionRate,
-          avgScore: paper.avgScore
-        });
-      });
-    } else {
-      // 如果没有问卷数据，至少显示部门信息
-      acc.push({
-        departmentId: department.departmentId,
-        departmentName: department.departmentName,
-        userNum: department.userNum,
-        paperId: null,
-        paperTitle: '暂无问卷数据',
-        publishTime: '',
-        completionRate: 0,
-        avgScore: 0
-      });
+// 统计卡片数据
+const statCards = reactive([
+  { title: '总用户数', value: 0, icon: 'User', color: '#409EFF', trend: 0 },
+  { title: '部门数量', value: 0, icon: 'OfficeBuilding', color: '#67C23A' },
+  { title: '问卷总数', value: 0, icon: 'Document', color: '#9B59B6' },
+  { title: '高风险用户', value: 0, icon: 'Warning', color: '#F56C6C', trend: 0 }
+])
+
+// 表格数据
+const tableData = ref([])
+const loading = ref(false)
+
+// 图表引用
+const healthChart = ref(null)
+const riskChart = ref(null)
+let healthChartInstance = null
+let riskChartInstance = null
+
+// 加载数据
+const loadData = async () => {
+  loading.value = true
+  try {
+    // 获取统计数据
+    const statsRes = await request.post('/department/stats', {
+      ...searchParams,
+      pageNum: pagination.current,
+      pageSize: pagination.size,
+      startTime: searchParams.timeRange?.[0],
+      endTime: searchParams.timeRange?.[1]
+    })
+    
+    if (statsRes.code === 200) {
+      const data = statsRes.data
+      statCards[0].value = data.totalUsers
+      statCards[1].value = data.departmentCount
+      statCards[2].value = data.totalTestPapers
+      statCards[3].value = data.highRiskUsers
+      
+      // 更新表格数据
+      tableData.value = data.list.map(dept => ({
+        ...dept,
+        completionRate: dept.completedCount / dept.userCount || 0,
+        highRiskRate: dept.highRiskCount / dept.userCount || 0
+      }))
+      pagination.total = data.total
+      
+      // 初始化图表
+      initCharts(data.chartData)
     }
-    return acc;
-  }, []);
-});
+  } catch (error) {
+    console.error('加载数据失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
 
-// 计算总用户数
-const totalUsers = computed(() => {
-  return data.tableData.reduce((sum, dept) => sum + (dept.userNum || 0), 0);
-});
+// 初始化图表
+const initCharts = (chartData) => {
+  nextTick(() => {
+    if (!healthChartInstance && healthChart.value) {
+      healthChartInstance = echarts.init(healthChart.value)
+    }
+    if (!riskChartInstance && riskChart.value) {
+      riskChartInstance = echarts.init(riskChart.value)
+    }
+    
+    // 部门健康雷达图
+    if (healthChartInstance) {
+      const option = {
+        tooltip: { trigger: 'item' },
+        radar: {
+          indicator: chartData.healthIndicators,
+          radius: '65%'
+        },
+        series: [{
+          type: 'radar',
+          data: chartData.healthData,
+          areaStyle: { opacity: 0.3 }
+        }]
+      }
+      healthChartInstance.setOption(option)
+    }
+    
+    // 高风险用户饼图
+    if (riskChartInstance) {
+      const option = {
+        tooltip: { trigger: 'item' },
+        legend: { orient: 'vertical', right: 10, top: 'center' },
+        series: [{
+          type: 'pie',
+          radius: ['40%', '70%'],
+          data: chartData.riskDistribution,
+          emphasis: { itemStyle: { shadowBlur: 10 } }
+        }]
+      }
+      riskChartInstance.setOption(option)
+    }
+  })
+}
 
-// 计算问卷总数
-const totalTestPapers = computed(() => {
-  return data.tableData.reduce((sum, dept) => {
-    return sum + (dept.testPapers ? dept.testPapers.length : 0);
-  }, 0);
-});
+// 重置搜索
+const resetSearch = () => {
+  searchParams.departmentName = ''
+  searchParams.paperTitle = ''
+  searchParams.timeRange = []
+  pagination.current = 1
+  loadData()
+}
 
-// 计算部门数量
-const departmentCount = computed(() => {
-  return data.tableData.length;
-});
+// 分页变化
+const handleSizeChange = (size) => {
+  pagination.size = size
+  pagination.current = 1
+  loadData()
+}
+
+const handleCurrentChange = (current) => {
+  pagination.current = current
+  loadData()
+}
+
+// 导出数据
+const exportData = async () => {
+  try {
+    const res = await request.post('/department/export', {
+      ...searchParams,
+      startTime: searchParams.timeRange?.[0],
+      endTime: searchParams.timeRange?.[1]
+    }, { responseType: 'blob' })
+    
+    const url = window.URL.createObjectURL(new Blob([res]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', '部门统计数据.xlsx')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } catch (error) {
+    console.error('导出失败:', error)
+  }
+}
 
 // 格式化日期
 const formatDate = (dateString) => {
-  if (!dateString) return '-';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  }).replace(/\//g, '-');
-};
+  if (!dateString) return '-'
+  return new Date(dateString).toLocaleDateString()
+}
 
-// 格式化分数，保留一位小数
-const formatScore = (score) => {
-  if (score === undefined || score === null) return '0.0';
-  return parseFloat(score).toFixed(1);
-};
+// 获取分数颜色
+const getScoreColor = (score, total) => {
+  const percent = score / total
+  if (percent < 0.6) return '#F56C6C'
+  if (percent < 0.8) return '#E6A23C'
+  return '#67C23A'
+}
 
-// 格式化百分比，显示为百分比形式
-const formatPercentage = (rate) => {
-  if (rate === undefined || rate === null) return '0%';
-  return `${(parseFloat(rate) * 100).toFixed(1)}%`;
-};
+// 获取完成率颜色
+const getRateColor = (rate) => {
+  if (rate < 0.5) return '#F56C6C'
+  if (rate < 0.8) return '#E6A23C'
+  return '#67C23A'
+}
 
-// 修改加载数据方法
-const load = async () => {
-  data.loading = true;
-  try {
-    const res = await request.get('/testRecord/metric', {
-      params: {
-        pageNum: data.pageNum,
-        pageSize: data.pageSize,
-        departmentName: data.departmentName,
-        paperTitle: data.paperTitle,
-        publishTime: data.publishTime || ''
-      }
-    });
-    
-    if (res.code === '200') {
-      data.tableData = res.data?.list || [];
-      data.total = res.data?.total || 0;
-    } else {
-      ElMessage.error(res.msg || '加载部门统计数据失败');
-    }
-  } catch (error) {
-    console.error('Failed to load data:', error);
-    ElMessage.error('加载数据失败，请检查网络连接');
-  } finally {
-    data.loading = false;
-  }
-};
+// 获取风险率颜色
+const getRiskColor = (rate) => {
+  if (rate > 0.2) return '#F56C6C'
+  if (rate > 0.1) return '#E6A23C'
+  return '#67C23A'
+}
 
-// 添加分页处理方法
-const handleSizeChange = (val) => {
-  data.pageSize = val;
-  data.pageNum = 1; // 切换每页显示数量时重置为第一页
-  load();
-};
-
-const handleCurrentChange = (val) => {
-  data.pageNum = val;
-  load();
-};
-
-// 修改重置方法
-const reset = () => {
-  data.departmentName = '';
-  data.paperTitle = '';
-  data.publishTime = '';
-  data.pageNum = 1;
-  load();
-};
-
-// 修改导出方法，添加分页参数
-const downLoad = async () => {
-  try {
-    ElMessage.info('正在导出数据，请稍候...');
-    
-    const response = await request.get('/testRecord/export', {
-      params: {
-        pageNum: data.pageNum,
-        pageSize: data.pageSize,
-        departmentName: data.departmentName,
-        paperTitle: data.paperTitle,
-        publishTime: data.publishTime || ''
-      },
-      responseType: 'blob'
-    });
-    
-    const blob = new Blob([response]);
-    saveAs(blob, '部门统计数据.xlsx');
-    
-    ElMessage.success('导出成功');
-  } catch (error) {
-    console.error('Export error:', error);
-    ElMessage.error('导出失败，请重试');
-  }
-};
+// 行点击事件
+const handleRowClick = (row) => {
+  console.log('查看部门详情:', row.id)
+}
 
 // 初始化加载
-load();
+onMounted(() => {
+  loadData()
+})
+
+// 组件卸载时销毁图表
+onUnmounted(() => {
+  if (healthChartInstance) {
+    healthChartInstance.dispose()
+    healthChartInstance = null
+  }
+  if (riskChartInstance) {
+    riskChartInstance.dispose()
+    riskChartInstance = null
+  }
+})
 </script>
 
 <style scoped>
 .department-stats-container {
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 1rem;
+  padding: 20px;
   background-color: #f5f7fa;
 }
 
-/* 统一按钮样式 */
-:deep(.el-button) {
-  transition: all 0.2s ease;
-  display: inline-flex;
+.search-card {
+  background-color: #fff;
+  border-radius: 4px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.search-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  align-items: center;
+}
+
+.search-item {
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background-color: #fff;
+  border-radius: 4px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
+  margin-right: 15px;
 }
 
-:deep(.el-button:hover:not(:disabled)) {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+.stat-icon svg {
+  width: 24px;
+  height: 24px;
 }
 
-:deep(.el-button--primary) {
-  --el-button-bg-color: #2A5C8A;
-  --el-button-border-color: #2A5C8A;
-  --el-button-hover-bg-color: #1e4266;
-  --el-button-hover-border-color: #1e4266;
+.stat-content {
+  flex: 1;
 }
 
-:deep(.el-button--success) {
-  --el-button-bg-color: #10b981;
-  --el-button-border-color: #10b981;
-  --el-button-hover-bg-color: #059669;
-  --el-button-hover-border-color: #059669;
+.stat-title {
+  font-size: 14px;
+  color: #909399;
+  margin-bottom: 5px;
 }
 
-:deep(.el-button--danger) {
-  --el-button-bg-color: #ef4444;
-  --el-button-border-color: #ef4444;
-  --el-button-hover-bg-color: #dc2626;
-  --el-button-hover-border-color: #dc2626;
+.stat-value {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 5px;
 }
 
-:deep(.el-button--default) {
-  --el-button-hover-bg-color: #f3f4f6;
-  --el-button-hover-border-color: #d1d5db;
+.stat-trend {
+  font-size: 12px;
+  color: #909399;
 }
 
-:deep(.el-button.is-disabled) {
-  opacity: 0.6;
-  cursor: not-allowed;
+.chart-area {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 20px;
 }
 
-:deep(.el-pagination.is-background .el-pager li:not(.is-disabled).is-active) {
-  background-color: #2A5C8A;
+@media (max-width: 1200px) {
+  .chart-area {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-:deep(.el-table .el-table__header-wrapper th) {
-  background-color: #f5f7fa;
-  font-weight: 600;
+@media (max-width: 768px) {
+  .chart-area {
+    grid-template-columns: 1fr;
+  }
 }
 
-/* Ensure content area doesn't affect sidebar */
-:deep(.el-main) {
-  overflow-y: hidden;
+.chart-card {
+  background-color: #fff;
+  border-radius: 4px;
+  padding: 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Card hover effects */
-.bg-white {
-  transition: all 0.3s ease;
+.chart-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 15px;
 }
 
-.bg-white:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.chart-container {
+  height: 300px;
 }
 
-/* Table row hover effect */
+.table-card {
+  background-color: #fff;
+  border-radius: 4px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.questionnaire-table {
+  padding: 10px;
+}
+
+.paper-title, .department-name, .user-count, .paper-count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rate-text {
+  margin-left: 8px;
+  font-size: 14px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  color: #909399;
+}
+
+.empty-state svg {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 10px;
+}
+
+.pagination {
+  background-color: #fff;
+  border-radius: 4px;
+  padding: 15px 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
 :deep(.el-table__row) {
-  transition: background-color 0.2s ease;
+  cursor: pointer;
 }
 
 :deep(.el-table__row:hover) {
-  background-color: #f0f7ff !important;
+  background-color: #f5f7fa !important;
+}
+
+:deep(.el-progress-bar) {
+  padding-right: 0;
+  margin-right: 0;
+}
+
+.health-details-card {
+  background-color: #fff;
+  border-radius: 4px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.card-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #2A5C8A;
+}
+
+.health-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.health-stat-item {
+  background-color: #f9fafb;
+  border-radius: 8px;
+  padding: 15px;
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #606266;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.stat-desc {
+  font-size: 12px;
+  color: #909399;
+}
+
+.text-success {
+  color: #67C23A;
+}
+
+.text-warning {
+  color: #E6A23C;
+}
+
+.text-danger {
+  color: #F56C6C;
+}
+
+.health-distribution {
+  margin-bottom: 20px;
+}
+
+.distribution-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  color: #2A5C8A;
+}
+
+.distribution-chart {
+  height: 300px;
+}
+
+.health-recommendations {
+  background-color: #f9fafb;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.recommendations-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  color: #2A5C8A;
+}
+
+.recommendations-content {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+@media (max-width: 768px) {
+  .recommendations-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .health-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+.recommendation-item {
+  display: flex;
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.recommendation-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: #ecf5ff;
+  border-radius: 8px;
+  margin-right: 15px;
+  color: #409EFF;
+}
+
+.recommendation-title {
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #303133;
+}
+
+.recommendation-desc {
+  font-size: 12px;
+  color: #606266;
+  line-height: 1.5;
 }
 </style>

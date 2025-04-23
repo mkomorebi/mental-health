@@ -2,6 +2,7 @@ package com.example.mapper;
 
 import com.example.entity.TestRecord;
 import com.example.entity.resp.MetricResp;
+import com.example.entity.resp.DepartmentStatsResp;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Param;
 
@@ -24,7 +25,7 @@ public interface TestRecordMapper {
 
     List<TestRecord> selectAll(TestRecord testRecord); // 查询所有 TestRecord 记录
 
-    List<MetricResp> metric(); // 查询指标响应
+    List<MetricResp> metric(@Param("companyId") Integer companyId); // 查询指标响应
 
     List<TestRecord> selectRecentWeek(TestRecord testRecord);
 
@@ -33,4 +34,13 @@ public interface TestRecordMapper {
         @Param("minScore") Double minScore, 
         @Param("maxScore") Double maxScore, 
         @Param("doctorId") Integer doctorId);
+
+    /**
+     * 获取部门统计数据
+     */
+    List<DepartmentStatsResp> getDepartmentStats(
+        @Param("companyId") Integer companyId,
+        @Param("departmentName") String departmentName,
+        @Param("paperTitle") String paperTitle,
+        @Param("publishTime") String publishTime);
 }

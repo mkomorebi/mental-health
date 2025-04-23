@@ -4,13 +4,15 @@
 <mapper namespace="com.example.mapper.FeedbackMapper">
 
     <select id="selectAll" resultType="com.example.entity.Feedback">
-        select feedback.*, user.name as userName from `feedback`
-        left join user on feedback.user_id = user.id
+        select feedback.*, employee.name as userName from `feedback`
+        left join employee on feedback.user_id = employee.id
+        left join department on employee.department_id = department.id
         <where>
-            <if test="status != null"> and status = #{status}</if>
-            <if test="question != null"> and question like concat('%', #{question}, '%')</if>
-            <if test="userId != null"> and user_id = #{userId}</if>
-            <if test="type != null"> and type = #{type}</if>
+            <if test="status != null"> and feedback.status = #{status}</if>
+            <if test="question != null"> and feedback.question like concat('%', #{question}, '%')</if>
+            <if test="userId != null"> and feedback.user_id = #{userId}</if>
+            <if test="type != null"> and feedback.type = #{type}</if>
+            <if test="companyId != null"> and department.company_id = #{companyId}</if>
         </where>
         order by feedback.id desc
     </select>
@@ -32,6 +34,7 @@
             <if test="type != null">type,</if>
             <if test="urgency != null">urgency,</if>
             <if test="imageUrls != null">image_urls,</if>
+            <if test="replyId != null">reply_id,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null">#{id},</if>
@@ -43,6 +46,7 @@
             <if test="type != null">#{type},</if>
             <if test="urgency != null">#{urgency},</if>
             <if test="imageUrls != null">#{imageUrls},</if>
+            <if test="replyId != null">#{replyId},</if>
         </trim>
     </insert>
 
@@ -60,6 +64,9 @@
             </if>
             <if test="replyTime != null">
                 reply_time = #{replyTime},
+            </if>
+            <if test="replyId != null">
+                reply_id = #{replyId},
             </if>
         </set>
         where id = #{id}

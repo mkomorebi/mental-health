@@ -4,11 +4,15 @@
 <mapper namespace="com.example.mapper.NoticeMapper">
 
     <select id="selectAll" resultType="com.example.entity.Notice">
-        select * from `notice`
+        select n.* from `notice` n
+        <if test="companyId != null">
+            join `admin` a on n.admin_id = a.id
+        </if>
         <where>
-            <if test="title != null"> and title like concat('%', #{title}, '%')</if>
+            <if test="title != null"> and n.title like concat('%', #{title}, '%')</if>
+            <if test="companyId != null"> and a.company_id = #{companyId}</if>
         </where>
-        order by id desc
+        order by n.id desc
     </select>
 
     <delete id="deleteById">
@@ -24,12 +28,14 @@
             <if test="title != null">title,</if>
             <if test="content != null">content,</if>
             <if test="time != null">time,</if>
+            <if test="adminId != null">admin_id,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null">#{id},</if>
             <if test="title != null">#{title},</if>
             <if test="content != null">#{content},</if>
             <if test="time != null">#{time},</if>
+            <if test="adminId != null">#{adminId},</if>
         </trim>
     </insert>
 
@@ -45,8 +51,23 @@
             <if test="time != null">
                 time = #{time},
             </if>
+            <if test="adminId != null">
+                admin_id = #{adminId},
+            </if>
         </set>
         where id = #{id}
     </update>
+
+    <select id="countByCompanyId" resultType="java.lang.Integer">
+        SELECT count(0) 
+        FROM `notice` n
+        JOIN `admin` a ON n.admin_id = a.id
+        WHERE a.company_id = #{companyId}
+    </select>
+
+    <!-- 取消注释并添加selectById方法 -->
+    <select id="selectById" parameterType="java.lang.Integer" resultType="com.example.entity.Notice">
+        SELECT * FROM notice WHERE id = #{id}
+    </select>
 
 </mapper>

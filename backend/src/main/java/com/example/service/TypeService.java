@@ -33,18 +33,18 @@ public class TypeService {
         typeMapper.updateById(type);
     }
 
-    public void deleteById(Integer id) {
-        typeMapper.deleteById(id);
+    public void deleteById(Integer id, Integer companyId) {
+        typeMapper.deleteById(id, companyId);
     }
 
-    public void deleteBatch(List<Integer> ids) {
+    public void deleteBatch(List<Integer> ids, Integer companyId) {
         for (Integer id : ids) {
-            typeMapper.deleteById(id);
+            typeMapper.deleteById(id, companyId);
         }
     }
 
-    public Type selectById(Integer id) {
-        return typeMapper.selectById(id);
+    public Type selectById(Integer id, Integer companyId) {
+        return typeMapper.selectById(id, companyId);
     }
 
     public List<Type> selectAll(Type type) {

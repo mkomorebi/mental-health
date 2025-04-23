@@ -174,6 +174,7 @@ const data = reactive({
     question: "",
     content: "",
     images: [],
+    imageUrls: null,
     urgency: 50
   }
 });
@@ -214,101 +215,69 @@ const handleImageUpload = async (event) => {
     return;
   }
   
-  console.log("上传图片类型:", file.type, "大小:", file.size);
-  
   // 创建FormData对象
   const formData = new FormData();
   formData.append('file', file);
   
   // 生成唯一ID来标识这次上传
-  const uploadId = Date.now().toString();
+  const loadingImg = {
+    uploadId: Date.now().toString(),
+    loading: true
+  };
   
   try {
-    // 显示上传中状态，使用uploadId标识
-    const loadingImg = {
-      uploadId: uploadId,
-      url: '', 
-      file: file,
-      loading: true
-    };
+    // 显示上传中状态
     data.form.images.push(loadingImg);
     
-    console.log("开始上传图片...", uploadId);
     const res = await request.post('/files/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     });
     
-    console.log("上传响应:", res);
-    console.log("响应数据类型:", typeof res.data);
-    console.log("响应数据:", res.data);
+    console.log("Upload response:", res);
     
+    // 检查响应状态和数据
     if (res.code === '200') {
-      // 使用uploadId查找对应的图片
-      const index = data.form.images.findIndex(img => img.uploadId === uploadId);
-      console.log("找到的索引:", index, "查找ID:", uploadId);
+      const uploadedUrl = res.data?.url || res.data; // 兼容不同的响应格式
       
+      if (!uploadedUrl) {
+        throw new Error('上传成功但未获取到图片URL');
+      }
+      
+      // 找到loading状态的图片并更新
+      const index = data.form.images.findIndex(img => img.uploadId === loadingImg.uploadId);
       if (index !== -1) {
-        try {
-          // 创建本地预览URL
-          const localPreviewUrl = URL.createObjectURL(file);
-          console.log("创建本地预览URL成功:", localPreviewUrl);
+        data.form.images[index] = {
+          uploadId: loadingImg.uploadId,
+          url: uploadedUrl,
+          loading: false
+        };
+        
+        // 更新form中的imageUrls字段，将所有图片URL用逗号连接
+        data.form.imageUrls = data.form.images
+          .filter(img => img.url && !img.loading)
+          .map(img => img.url)
+          .join(',');
           
-          // 检查响应数据结构
-          console.log("URL值:", res.data.url);
-          
-          // 更新图片对象，保留uploadId
-          data.form.images[index] = {
-            uploadId: uploadId,
-            url: res.data.url,
-            previewUrl: localPreviewUrl,
-            file: file,
-            loading: false
-          };
-          
-          console.log("更新后的图片对象:", data.form.images[index]);
-        } catch (error) {
-          console.error("处理上传响应时出错:", error);
-          data.form.images[index].loading = false;
-          data.form.images[index].loadError = true;
-        }
-      } else {
-        console.error("未找到加载中的图片对象，尝试添加新图片");
-        // 如果找不到，添加一个新的图片对象
-        try {
-          const localPreviewUrl = URL.createObjectURL(file);
-          data.form.images.push({
-            uploadId: uploadId,
-            url: res.data.url,
-            previewUrl: localPreviewUrl,
-            file: file,
-            loading: false
-          });
-        } catch (error) {
-          console.error("添加新图片失败:", error);
-        }
+        console.log("Updated imageUrls:", data.form.imageUrls);
       }
     } else {
-      // 上传失败，移除加载中的图片
-      const index = data.form.images.findIndex(img => img.uploadId === uploadId);
-      if (index !== -1) {
-        data.form.images.splice(index, 1);
-      }
-      ElMessage.error("图片上传失败: " + (res.msg || "未知错误"));
+      throw new Error(res.msg || '上传失败');
     }
   } catch (error) {
     console.error("图片上传错误:", error);
-    ElMessage.error("图片上传失败: " + (error.message || "未知错误"));
-    // 移除所有加载中的图片
-    const index = data.form.images.findIndex(img => img.uploadId === uploadId);
+    ElMessage.error(error.message || "图片上传失败，请稍后重试");
+    
+    // 移除加载中的图片
+    const index = data.form.images.findIndex(img => img.uploadId === loadingImg.uploadId);
     if (index !== -1) {
       data.form.images.splice(index, 1);
     }
+  } finally {
+    // 清空input，允许重复选择同一文件
+    event.target.value = '';
   }
-  
-  // 清空input，允许重复选择同一文件
-  event.target.value = '';
 };
 
 const removeImage = (index) => {
@@ -317,6 +286,14 @@ const removeImage = (index) => {
     URL.revokeObjectURL(data.form.images[index].previewUrl);
   }
   data.form.images.splice(index, 1);
+  
+  // 更新form中的imageUrls字段
+  data.form.imageUrls = data.form.images
+    .filter(img => img.url && !img.loading)
+    .map(img => img.url)
+    .join(',');
+    
+  console.log("Updated imageUrls after removal:", data.form.imageUrls);
 };
 
 const handleImageError = (index) => {
@@ -360,17 +337,21 @@ const submit = async () => {
   isSubmitting.value = true;
 
   try {
-    // 将图片数组转换为URL字符串，以逗号分隔
-    const imageUrls = data.form.images.map(img => img.url).filter(url => url).join(',');
-    console.log("提交的图片URLs:", imageUrls);
-    
+    // 确保imageUrls字段已正确设置
+    const imageUrls = data.form.images
+      .filter(img => img.url && !img.loading)
+      .map(img => img.url)
+      .join(',');
+      
     const formData = {
       ...data.form,
-      imageUrls: imageUrls
+      imageUrls: imageUrls || null // 如果没有图片则设为null
     };
     
-    // 删除原始images对象，避免传输过大数据
+    // 删除不需要的字段
     delete formData.images;
+    
+    console.log("Submitting feedback with images:", formData.imageUrls);
     
     const res = await request.post('/feedback/add', formData);
     if (res.code === '200') {
@@ -378,17 +359,8 @@ const submit = async () => {
         message: '反馈成功，等待管理员回复，您可以在右上角"我的反馈"查看具体内容',
         duration: 5000
       });
-      // 重置表单 
-      data.form = { 
-        type: "", 
-        question: "", 
-        content: "", 
-        images: [],
-        urgency: 50
-      };
-      errors.type = "";
-      errors.question = "";
-      errors.content = "";
+      // 重置表单
+      resetForm();
     }
   } catch (error) {
     console.error("提交反馈失败:", error);
@@ -396,6 +368,20 @@ const submit = async () => {
   } finally {
     isSubmitting.value = false;
   }
+};
+
+const resetForm = () => {
+  data.form = { 
+    type: "", 
+    question: "", 
+    content: "", 
+    images: [],
+    imageUrls: null,
+    urgency: 50
+  };
+  errors.type = "";
+  errors.question = "";
+  errors.content = "";
 };
 
 const debugImages = () => {

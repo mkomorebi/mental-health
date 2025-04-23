@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 public class AiChatController {
 
     private static final String API_URL = "https://api.deepseek.com/v1/chat/completions"; // AI聊天API的URL
-    private static final String API_KEY = "sk-6a0a56fd88a243ed9d1b19cf363dcf83"; // API密钥
+    private static final String API_KEY = "sk-8673586f1ee5487286126caca623eedc"; // API密钥
     private static final Logger logger = LoggerFactory.getLogger(AiChatController.class);
 
     private final RestTemplate restTemplate = new RestTemplate();
@@ -52,7 +52,7 @@ public class AiChatController {
             : null;
 
         if (messages == null || messages.isEmpty()) {
-            return Result.error("Messages history is required");
+            return Result.error("请选择一个对话");
         }
         
         // 添加详细日志，记录语音情绪数据

@@ -94,6 +94,18 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/manager/DoctorFront.vue'),
     children: [
       {
+        path: 'propagateDetail/:id',
+        component: () => import('@/views/manager/components/PropagateDetail.vue'),
+      },
+      {
+        path: 'propagateDetail',
+        component: () => import('@/views/manager/components/PropagateDetail.vue'),
+      },
+      {
+        path: 'doctorPropagate',
+        component: () => import('@/views/manager/components/DoctorPropagate.vue'),
+      },
+      {
         path: 'propagate',
         component: () => import('@/views/manager/components/Propagate.vue'),
       },

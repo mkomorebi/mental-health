@@ -18,12 +18,12 @@
           <a href="#features" class="text-gray-700 hover:text-[#2A5C8A] transition-colors">
             功能介绍
           </a>
-          <a href="#data" class="text-gray-700 hover:text-[#2A5C8A] transition-colors">
+          <!--<a href="#data" class="text-gray-700 hover:text-[#2A5C8A] transition-colors">
             数据展示
-          </a>
-          <a href="#resources" class="text-gray-700 hover:text-[#2A5C8A] transition-colors">
+          </a>-->
+          <!--<a href="#resources" class="text-gray-700 hover:text-[#2A5C8A] transition-colors">
             资源中心
-          </a>
+          </a>-->
           <a href="#about" class="text-gray-700 hover:text-[#2A5C8A] transition-colors">
             关于我们
           </a>
@@ -539,18 +539,18 @@
     </section>
 
     <!-- Data Visualization Section -->
-    <section id="data" class="py-16 bg-white">
-      <div class="container mx-auto px-4">
-        <div class="text-center mb-12">
+    <!--<section id="data" class="py-16 bg-white">
+      <div class="container mx-auto px-4">-->
+        <!--<div class="text-center mb-12">
           <h2 class="text-3xl font-bold text-[#2A5C8A] mb-4">数据可视化展示墙</h2>
           <p class="text-gray-600 max-w-2xl mx-auto">
             直观展示企业心理健康数据，帮助管理者做出明智决策
           </p>
-        </div>
+        </div>-->
 
-        <div class="grid md:grid-cols-3 gap-6">
+        <!--<div class="grid md:grid-cols-3 gap-6">-->
           <!-- Health Distribution -->
-          <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+          <!--<div class="bg-white rounded-lg shadow-sm overflow-hidden">
             <div class="p-6">
               <h3 class="text-lg font-medium text-[#2A5C8A] mb-4">企业整体心理健康分布</h3>
               <div class="relative h-48 flex items-center justify-center">
@@ -584,10 +584,10 @@
                 </div>
               </div>
             </div>
-          </div>
+          </div>-->
 
           <!-- Department Heatmap -->
-          <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+          <!--<div class="bg-white rounded-lg shadow-sm overflow-hidden">
             <div class="p-6">
               <h3 class="text-lg font-medium text-[#2A5C8A] mb-4">部门健康指数热力图</h3>
               <div class="h-48 grid grid-cols-3 grid-rows-3 gap-2">
@@ -602,10 +602,10 @@
                 </div>
               </div>
             </div>
-          </div>
+          </div>-->
 
           <!-- Recent Assessments -->
-          <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+          <!--<div class="bg-white rounded-lg shadow-sm overflow-hidden">
             <div class="p-6">
               <h3 class="text-lg font-medium text-[#2A5C8A] mb-4">最新评估完成情况</h3>
               <div class="h-48 overflow-y-auto space-y-3">
@@ -631,18 +631,18 @@
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </div>-->
+        <!--</div>-->
 
-        <div class="mt-8 text-center">
+        <!--<div class="mt-8 text-center">
           <div class="inline-flex items-center gap-2 text-sm text-gray-500">
           </div>
-        </div>
-      </div>
-    </section>
+        </div>-->
+      <!--</div>
+    </section>-->
 
     <!-- Resource Center -->
-    <section id="resources" class="py-16 bg-gradient-to-b from-white to-blue-50">
+    <!--<section id="resources" class="py-16 bg-gradient-to-b from-white to-blue-50">
       <div class="container mx-auto px-4">
         <div class="text-center mb-12">
           <h2 class="text-3xl font-bold text-[#2A5C8A] mb-4">情景化资源中心</h2>
@@ -804,10 +804,10 @@
           </div>
         </div>
       </div>
-    </section>
+    </section>-->
 
     <!-- Partners Section -->
-    <section id="about" class="py-16 bg-white">
+    <!--<section id="about" class="py-16 bg-white">
       <div class="container mx-auto px-4">
         <div class="text-center mb-12">
           <h2 class="text-3xl font-bold text-[#2A5C8A] mb-4">合作伙伴</h2>
@@ -840,7 +840,7 @@
           </div>
         </div>
       </div>
-    </section>
+    </section>-->
 
     <!-- CTA Section -->
     <section class="py-16 bg-[#2A5C8A] text-white">
@@ -1085,11 +1085,11 @@
                 <p class="text-sm text-gray-600">我们将带您了解系统的核心功能</p>
               </div>
             </div>
-            <img
+            <!--<img
                 src="https://via.placeholder.com/400x200?text=Welcome"
                 alt="Welcome"
                 class="rounded-lg"
-            />
+            />-->
           </div>
 
           <div v-if="guideStep === 1" class="space-y-4">
@@ -1107,11 +1107,11 @@
                 <p class="text-sm text-gray-600">情绪记录、自助资源和专业支持</p>
               </div>
             </div>
-            <img
+            <!--<img
                 src="https://via.placeholder.com/400x200?text=Employee+Services"
                 alt="Employee Services"
                 class="rounded-lg"
-            />
+            />-->
           </div>
 
           <div v-if="guideStep === 2" class="space-y-4">
@@ -1128,11 +1128,11 @@
                 <p class="text-sm text-gray-600">数据分析、团队管理和预警系统</p>
               </div>
             </div>
-            <img
+            <!--<img
                 src="https://via.placeholder.com/400x200?text=Management+Features"
                 alt="Management Features"
                 class="rounded-lg"
-            />
+            />-->
           </div>
 
           <div v-if="guideStep === 3" class="space-y-4">
@@ -1147,11 +1147,11 @@
                 <p class="text-sm text-gray-600">随时获取情绪支持和专业帮助</p>
               </div>
             </div>
-            <img
+            <!--<img
                 src="https://via.placeholder.com/400x200?text=Emotional+Support"
                 alt="Emotional Support"
                 class="rounded-lg"
-            />
+            />-->
           </div>
 
           <div class="flex justify-between mt-6">

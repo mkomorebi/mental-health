@@ -17,7 +17,7 @@ public interface TestPaperMapper {
 
     void deleteById(Integer id); // 根据 ID 删除 TestPaper 记录
 
-    @Select("select * from `test_paper` where id = #{id}")
+    @Select("select * from test_paper where id = #{id}")
     TestPaper selectById(Integer id); // 根据 ID 查询 TestPaper 记录
 
     List<TestPaper> selectAll(TestPaper testPaper); // 查询所有 TestPaper 记录

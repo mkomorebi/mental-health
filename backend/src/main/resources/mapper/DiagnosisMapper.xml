@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.mapper.DiagnosisMapper">
     
-    <resultMap id="BaseResultMap" type="com.example.entity.Diagnosis">
+    <resultMap id="DiagnosisResultMap" type="com.example.entity.Diagnosis">
         <id column="diagnosis_id" property="diagnosisId" />
         <result column="doctor_id" property="doctorId" />
         <result column="symptoms" property="symptoms" />
@@ -10,20 +10,13 @@
         <result column="diagnosis_details" property="diagnosisDetails" />
         <result column="health_score" property="healthScore" />
         <result column="diagnosis_date" property="diagnosisDate" />
-    </resultMap>
-    
-    <resultMap id="DiagnosisWithRelationsMap" type="com.example.entity.Diagnosis" extends="BaseResultMap">
+        
         <association property="doctor" column="doctor_id" 
                      select="com.example.mapper.DoctorMapper.selectById" />
         <association property="patient" column="patient_id" 
-                     select="com.example.mapper.UserMapper.selectById" />
+                     select="com.example.mapper.EmployeeMapper.selectById" />
     </resultMap>
     
-    <resultMap id="DiagnosisWithJoinedFieldsMap" type="com.example.entity.Diagnosis" extends="BaseResultMap">
-        <result column="patient_name" property="patient.name" />
-        <result column="doctor_name" property="doctor.name" />
-    </resultMap>
-
     <sql id="Base_Column_List">
         diagnosis_id, doctor_id, symptoms, patient_id, diagnosis_details, health_score, diagnosis_date
     </sql>
@@ -33,38 +26,40 @@
         VALUES(#{doctorId}, #{symptoms}, #{patientId}, #{diagnosisDetails}, #{healthScore}, #{diagnosisDate})
     </insert>
     
-    <select id="selectById" parameterType="java.lang.Integer" resultMap="DiagnosisWithRelationsMap">
+    <select id="selectById" parameterType="java.lang.Integer" resultMap="DiagnosisResultMap">
         SELECT <include refid="Base_Column_List" />
         FROM diagnosis
         WHERE diagnosis_id = #{diagnosisId}
     </select>
     
-    <select id="selectByDoctorId" parameterType="java.lang.Integer" resultMap="DiagnosisWithRelationsMap">
-        SELECT d.*
-        FROM diagnosis d
-        WHERE d.doctor_id = #{doctorId}
-        ORDER BY d.diagnosis_date DESC
+    <select id="selectByDoctorId" parameterType="java.lang.Integer" resultMap="DiagnosisResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM diagnosis
+        WHERE doctor_id = #{doctorId}
+        ORDER BY diagnosis_date DESC
     </select>
     
-    <select id="selectByPatientId" parameterType="java.lang.Integer" resultMap="DiagnosisWithRelationsMap">
-        SELECT d.*
-        FROM diagnosis d
-        WHERE d.patient_id = #{patientId}
-        ORDER BY d.diagnosis_date DESC
+    <select id="selectByPatientId" parameterType="java.lang.Integer" resultMap="DiagnosisResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM diagnosis
+        WHERE patient_id = #{patientId}
+        ORDER BY diagnosis_date DESC
     </select>
     
-    <select id="selectAll" resultMap="DiagnosisWithRelationsMap">
-        SELECT d.*
-        FROM diagnosis d
-        ORDER BY d.diagnosis_date DESC
+    <select id="selectAll" resultMap="DiagnosisResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM diagnosis
+        ORDER BY diagnosis_date DESC
     </select>
     
     <update id="update" parameterType="com.example.entity.Diagnosis">
         UPDATE diagnosis
-        SET symptoms = #{symptoms},
-            diagnosis_details = #{diagnosisDetails},
-            health_score = #{healthScore},
-            diagnosis_date = #{diagnosisDate}
+        <set>
+            <if test="symptoms != null">symptoms = #{symptoms},</if>
+            <if test="diagnosisDetails != null">diagnosis_details = #{diagnosisDetails},</if>
+            <if test="healthScore != null">health_score = #{healthScore},</if>
+            <if test="diagnosisDate != null">diagnosis_date = #{diagnosisDate},</if>
+        </set>
         WHERE diagnosis_id = #{diagnosisId}
     </update>
     
@@ -73,25 +68,33 @@
         WHERE diagnosis_id = #{diagnosisId}
     </delete>
     
-    <select id="selectByCondition" resultMap="DiagnosisWithRelationsMap">
-        SELECT d.*
+    <select id="selectByCondition" resultMap="DiagnosisResultMap">
+        SELECT d.*, 
+               e.id as patient_id, e.name as patient_name, e.phone as patient_phone,
+               doc.id as doctor_id, doc.name as doctor_name
         FROM diagnosis d
-        LEFT JOIN user u ON d.patient_id = u.id
+        LEFT JOIN employee e ON d.patient_id = e.id
+        LEFT JOIN doctor doc ON d.doctor_id = doc.id
         <where>
-            <if test="doctorId != null">
-                AND d.doctor_id = #{doctorId}
-            </if>
-            <if test="patientName != null and patientName != ''">
-                AND u.name LIKE CONCAT('%', #{patientName}, '%')
-            </if>
-            <if test="symptoms != null and symptoms != ''">
-                AND d.symptoms LIKE CONCAT('%', #{symptoms}, '%')
+            <if test="diagnosis != null">
+                <if test="diagnosis.patientId != null">
+                    AND d.patient_id = #{diagnosis.patientId}
+                </if>
+                <if test="diagnosis.doctorId != null">
+                    AND d.doctor_id = #{diagnosis.doctorId}
+                </if>
+                <if test="diagnosis.symptoms != null and diagnosis.symptoms != ''">
+                    AND d.symptoms LIKE CONCAT('%', #{diagnosis.symptoms}, '%')
+                </if>
             </if>
             <if test="startDate != null">
-                <![CDATA[ AND d.diagnosis_date >= #{startDate} ]]>
+                AND d.diagnosis_date &gt;= #{startDate}
             </if>
             <if test="endDate != null">
-                <![CDATA[ AND d.diagnosis_date <= #{endDate} ]]>
+                AND d.diagnosis_date &lt;= #{endDate}
+            </if>
+            <if test="patientName != null and patientName != ''">
+                AND e.name LIKE CONCAT('%', #{patientName}, '%')
             </if>
         </where>
         ORDER BY d.diagnosis_date DESC

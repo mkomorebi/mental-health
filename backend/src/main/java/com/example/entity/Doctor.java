@@ -21,6 +21,8 @@ public class Doctor extends Account {
     private String certificate; // 证书
     private String status; // 状态
     private Integer num; // 其他字段
+    private Integer companyId; // 公司ID
+    private transient String companyName; // 添加公司名称字段，不持久化到数据库
 
     // Getter和Setter方法
     public Integer getId() {
@@ -133,5 +135,21 @@ public class Doctor extends Account {
 
     public void setNum(Integer num) {
         this.num = num;
+    }
+
+    public Integer getCompanyId() {
+        return companyId;
+    }
+
+    public void setCompanyId(Integer companyId) {
+        this.companyId = companyId;
+    }
+
+    public String getCompanyName() {
+        return companyName;
+    }
+
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
     }
 }

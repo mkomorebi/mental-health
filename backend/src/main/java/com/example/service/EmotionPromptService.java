@@ -2,11 +2,10 @@ package com.example.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * 情绪提示词服务，用于生成基于用户情绪的提示词
@@ -36,6 +35,9 @@ public class EmotionPromptService {
     // 置信度阈值
     private static final double HIGH_CONFIDENCE_THRESHOLD = 0.8;
     private static final double MEDIUM_CONFIDENCE_THRESHOLD = 0.5;
+    
+    @Autowired
+    private DeepseekEmotionService deepseekEmotionService;
 
     /**
      * 生成情绪感知提示词
@@ -51,12 +53,12 @@ public class EmotionPromptService {
         // 提取用户ID（如果有的话）
         String userId = extractUserId(messages);
         
-        // 分析文本情绪
-        EmotionResult textEmotionResult = analyzeTextEmotion(messages);
-        String textEmotion = textEmotionResult.emotion;
-        double textConfidence = textEmotionResult.confidence;
+        // 使用Deepseek API分析文本情绪
+        Map<String, Object> deepseekResult = deepseekEmotionService.analyzeEmotion(messages);
+        String textEmotion = (String) deepseekResult.get("emotion");
+        double textConfidence = normalizeConfidence(deepseekResult.get("confidence"), 0.5, "文本");
         
-        logger.info("文本情绪分析结果: {}, 置信度: {}", textEmotion, textConfidence);
+        logger.info("Deepseek文本情绪分析结果: {}, 置信度: {}", textEmotion, textConfidence);
         
         // 分析语音情绪（如果有）
         String voiceEmotionType = null;
@@ -66,26 +68,12 @@ public class EmotionPromptService {
         if (voiceEmotion != null) {
             logger.info("收到语音情绪数据: {}", voiceEmotion);
             voiceEmotionType = (String) voiceEmotion.get("emotion");
-            String confidenceStr = (String) voiceEmotion.get("confidence");
+            voiceConfidence = normalizeConfidence(voiceEmotion.get("confidence"), 0.0, "语音");
             
             // 检查是否是低质量音频
             if (voiceEmotion.containsKey("quality")) {
                 String quality = (String) voiceEmotion.get("quality");
                 isLowQualityAudio = "low".equalsIgnoreCase(quality);
-            }
-            
-            if (confidenceStr != null) {
-                logger.info("解析语音情绪置信度字符串: {}", confidenceStr);
-                if (confidenceStr.endsWith("%")) {
-                    try {
-                        voiceConfidence = Double.parseDouble(confidenceStr.substring(0, confidenceStr.length() - 1)) / 100.0;
-                        logger.info("解析后的置信度值: {}", voiceConfidence);
-                    } catch (NumberFormatException e) {
-                        logger.warn("无法解析语音情绪置信度: {}", confidenceStr, e);
-                    }
-                } else {
-                    logger.warn("语音情绪置信度格式不正确，应以%结尾: {}", confidenceStr);
-                }
             }
             
             logger.info("语音情绪分析结果: {}, 置信度: {}, 低质量音频: {}", 
@@ -200,7 +188,7 @@ public class EmotionPromptService {
     /**
      * 情绪结果类
      */
-    private static class EmotionResult {
+    /** private static class EmotionResult {
         String emotion;
         double confidence;
         
@@ -209,7 +197,7 @@ public class EmotionPromptService {
             this.confidence = confidence;
         }
     }
-    
+     */
     /**
      * 基于权重和置信度做出情绪决策
      */
@@ -260,7 +248,7 @@ public class EmotionPromptService {
     
     /**
      * 分析文本情绪
-     */
+     
     private EmotionResult analyzeTextEmotion(List<Map<String, String>> messages) {
         // 获取最近的用户消息
         List<String> userMessages = new ArrayList<>();
@@ -319,11 +307,11 @@ public class EmotionPromptService {
         }
         
         return new EmotionResult(dominantEmotion, confidence);
-    }
+    }*/
     
     /**
      * 计算文本中关键词出现的次数
-     */
+   
     private int countKeywords(String text, String... keywords) {
         int count = 0;
         for (String keyword : keywords) {
@@ -334,8 +322,7 @@ public class EmotionPromptService {
             }
         }
         return count;
-    }
-    
+    }  */
     /**
      * 更新用户情绪历史
      */
@@ -478,5 +465,52 @@ public class EmotionPromptService {
      */
     public String generateEmotionPrompt(List<Map<String, String>> messages) {
         return generateEmotionPrompt(messages, null);
+    }
+
+    /**
+     * 处理置信度值，确保返回0-1范围内的double值
+     * @param confidenceObj 置信度对象，可能是Double或String
+     * @param defaultValue 默认值
+     * @param source 日志标识，用于区分来源
+     * @return 标准化的置信度值
+     */
+    private double normalizeConfidence(Object confidenceObj, double defaultValue, String source) {
+        if (confidenceObj == null) {
+            return defaultValue;
+        }
+        
+        if (confidenceObj instanceof Double) {
+            double value = (Double) confidenceObj;
+            // 确保值在0-1范围内
+            if (value > 1.0) {
+                logger.info("{}置信度值大于1，进行归一化: {}", source, value);
+                value /= 100.0;
+            }
+            return value;
+        } else if (confidenceObj instanceof String) {
+            String confidenceStr = (String) confidenceObj;
+            logger.info("解析{}置信度字符串: {}", source, confidenceStr);
+            
+            try {
+                double value;
+                if (confidenceStr.endsWith("%")) {
+                    value = Double.parseDouble(confidenceStr.substring(0, confidenceStr.length() - 1)) / 100.0;
+                } else {
+                    value = Double.parseDouble(confidenceStr);
+                    // 如果值大于1且不是百分比格式，假设它是0-100的范围并转换为0-1
+                    if (value > 1.0) {
+                        value /= 100.0;
+                    }
+                }
+                logger.info("解析后的{}置信度值: {}", source, value);
+                return value;
+            } catch (NumberFormatException e) {
+                logger.warn("无法解析{}置信度: {}", source, confidenceStr, e);
+                return defaultValue;
+            }
+        } else {
+            logger.warn("未知的{}置信度类型: {}", source, confidenceObj.getClass().getName());
+            return defaultValue;
+        }
     }
 } 

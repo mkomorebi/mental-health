@@ -48,6 +48,9 @@
                   <div class="px-4 py-3 text-sm text-gray-900">
                     <div class="font-medium">{{ userInfo.name }}</div>
                     <div class="truncate text-gray-500">{{ userInfo.roleName || '心理医生' }}</div>
+                    <div class="truncate text-gray-500 mt-1">
+                      {{ userInfo.companyName || '未知' }}
+                    </div>
                   </div>
                   <!--<div class="py-1">
                     <a 
@@ -114,7 +117,7 @@
               </template>
               <el-menu-item 
                 index="/doctor/propagate"
-                v-if="userInfo.status === '审批通过'"
+                @click="checkAuthStatus"
               >
                 宣传资料
               </el-menu-item>
@@ -128,19 +131,19 @@
               </template>
               <el-menu-item
                 index="/doctor/topic"
-                v-if="userInfo.status === '审批通过'"
+                @click="checkAuthStatus"
               >
                 题库
               </el-menu-item>
               <el-menu-item 
                 index="/doctor/testPaper"
-                v-if="userInfo.status === '审批通过'"
+                @click="checkAuthStatus"
               >
                 试卷
               </el-menu-item>
               <el-menu-item 
                 index="/doctor/testRecord"
-                v-if="userInfo.status === '审批通过'"
+                @click="checkAuthStatus"
               >
                 测试记录
               </el-menu-item>
@@ -152,8 +155,18 @@
                 <el-icon><Service /></el-icon>
                 <span>服务管理</span>
               </template>
-              <el-menu-item index="/doctor/reservation">预约记录</el-menu-item>
-              <el-menu-item index="/doctor/diagnosis">咨询记录</el-menu-item>
+              <el-menu-item 
+                index="/doctor/reservation"
+                @click="checkAuthStatus"
+              >
+                预约记录
+              </el-menu-item>
+              <el-menu-item 
+                index="/doctor/diagnosis"
+                @click="checkAuthStatus"
+              >
+                咨询记录
+              </el-menu-item>
             </el-sub-menu>
             
             <!-- 个人中心 -->
@@ -293,6 +306,7 @@ import {
 } from '@element-plus/icons-vue';
 import { onClickOutside } from '@vueuse/core';
 import axios from 'axios';
+import { ElMessage } from 'element-plus';
 
 const router = useRouter();
 const route = useRoute();
@@ -330,6 +344,25 @@ const breadcrumbTitle = computed(() => {
 });
 
 const handleMenuSelect = (index) => {
+  // 检查是否是需要认证的路由
+  const authRequiredRoutes = [
+    '/doctor/propagate',
+    '/doctor/topic',
+    '/doctor/testPaper',
+    '/doctor/testRecord',
+    '/doctor/reservation',
+    '/doctor/diagnosis'
+  ];
+
+  if (authRequiredRoutes.includes(index) && userInfo.value.status !== '审批通过') {
+    ElMessage({
+      type: 'warning',
+      message: '您的认证还未通过审批，暂时无法使用该功能。请等待管理员审批或联系管理员。',
+      duration: 3000
+    });
+    return;
+  }
+
   router.push(index);
   mobileMenuVisible.value = false;
 };
@@ -406,7 +439,20 @@ const fetchDoctorInfo = async () => {
   }
 };
 
-onMounted(() => {
+// 添加检查认证状态的方法
+const checkAuthStatus = (e) => {
+  if (userInfo.value.status !== '审批通过') {
+    e.preventDefault(); // 阻止默认的路由跳转
+    ElMessage({
+      type: 'warning',
+      message: '您的认证还未通过审批，暂时无法使用该功能。请等待管理员审批或联系管理员。',
+      duration: 3000
+    });
+    return false;
+  }
+};
+
+onMounted(async () => {
   // 初始化用户信息
   const userData = localStorage.getItem('xm-user');
   if (userData) {
@@ -441,6 +487,25 @@ onMounted(() => {
       });
     }
   });
+
+  // 如果用户未通过审批且当前路由需要审批权限，则重定向到个人资料页面
+  const authRequiredRoutes = [
+    '/doctor/propagate',
+    '/doctor/topic',
+    '/doctor/testPaper',
+    '/doctor/testRecord',
+    '/doctor/reservation',
+    '/doctor/diagnosis'
+  ];
+
+  if (userInfo.value.status !== '审批通过' && authRequiredRoutes.includes(route.path)) {
+    ElMessage({
+      type: 'warning',
+      message: '您的认证还未通过审批，请先完成认证。',
+      duration: 3000
+    });
+    router.push('/doctor/person');
+  }
 });
 </script>
 
@@ -524,5 +589,11 @@ onMounted(() => {
 
 .el-menu.overflow-y-auto::-webkit-scrollbar-track {
   background-color: #f5f7fa;
+}
+
+/* 添加未审批状态的菜单项样式 */
+.el-menu-item.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

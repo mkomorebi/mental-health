@@ -4,11 +4,28 @@
 <mapper namespace="com.example.mapper.SideshowMapper">
 
     <select id="selectAll" resultType="com.example.entity.Sideshow">
-        select sideshow.*, propagate.title as propagateTitle from `sideshow`
-        left join propagate on sideshow.propagate_id = propagate.id
+        select s.id, s.img, s.propagate_id as propagateId, p.title as propagateTitle 
+        from sideshow s
+        inner join propagate p on s.propagate_id = p.id
+        inner join doctor d on p.doctor_id = d.id
         <where>
-            <if test="propagateTitle != null"> and propagate.title like concat('%', #{propagateTitle}, '%')</if>
+            <if test="propagateTitle != null and propagateTitle != ''">
+                and p.title like concat('%', #{propagateTitle}, '%')
+            </if>
+            <if test="companyId != null">
+                and d.company_id = #{companyId}
+            </if>
         </where>
+        order by s.id desc
+    </select>
+
+    <select id="selectByCompanyId" resultType="com.example.entity.Sideshow">
+        select s.id, s.img, s.propagate_id as propagateId, p.title as propagateTitle 
+        from sideshow s
+        inner join propagate p on s.propagate_id = p.id
+        inner join doctor d on p.doctor_id = d.id
+        where d.company_id = #{companyId}
+        order by s.id desc
     </select>
 
     <delete id="deleteById">
@@ -16,15 +33,13 @@
         where id = #{id}
     </delete>
 
-    <insert id="insert" parameterType="com.example.entity.Sideshow" useGeneratedKeys="true">
+    <insert id="insert" parameterType="com.example.entity.Sideshow" useGeneratedKeys="true" keyProperty="id">
         insert into `sideshow`
         <trim prefix="(" suffix=")" suffixOverrides=",">
-            <if test="id != null">id,</if>
             <if test="img != null">img,</if>
             <if test="propagateId != null">propagate_id,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
-            <if test="id != null">#{id},</if>
             <if test="img != null">#{img},</if>
             <if test="propagateId != null">#{propagateId},</if>
         </trim>
@@ -42,5 +57,13 @@
         </set>
         where id = #{id}
     </update>
+
+    <select id="checkPropagateCompany" resultType="boolean">
+        SELECT COUNT(*) > 0 
+        FROM propagate p
+        INNER JOIN doctor d ON p.doctor_id = d.id
+        WHERE p.id = #{propagateId} 
+        AND d.company_id = #{companyId}
+    </select>
 
 </mapper>

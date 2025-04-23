@@ -7,12 +7,14 @@
         select * from `type`
         <where>
             <if test="title != null"> and title like concat('%', #{title}, '%')</if>
+            <if test="companyId != null"> and company_id = #{companyId}</if>
         </where>
     </select>
 
     <delete id="deleteById">
         delete from `type`
         where id = #{id}
+        <if test="companyId != null"> and company_id = #{companyId}</if>
     </delete>
 
     <insert id="insert" parameterType="com.example.entity.Type" useGeneratedKeys="true">
@@ -20,10 +22,12 @@
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">id,</if>
             <if test="title != null">title,</if>
+            <if test="companyId != null">company_id,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null">#{id},</if>
             <if test="title != null">#{title},</if>
+            <if test="companyId != null">#{companyId},</if>
         </trim>
     </insert>
 
@@ -35,6 +39,7 @@
             </if>
         </set>
         where id = #{id}
+        <if test="companyId != null"> and company_id = #{companyId}</if>
     </update>
 
 </mapper>

@@ -1,141 +1,93 @@
 package com.example.service;
 
-import cn.hutool.core.util.ObjectUtil;
-import com.example.common.Constants;
-import com.example.common.enums.ResultCodeEnum;
-import com.example.common.enums.RoleEnum;
 import com.example.entity.Account;
 import com.example.entity.Doctor;
-import com.example.entity.Reservation;
-import com.example.exception.CustomException;
-import com.example.mapper.DoctorMapper;
-import com.example.mapper.ReservationMapper;
-import com.example.utils.TokenUtils;
-import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
-import jakarta.annotation.Resource;
-import org.springframework.beans.BeanUtils;
-import org.springframework.stereotype.Service;
 
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
- * DoctorService 业务层，用于处理与 Doctor 实体相关的业务逻辑。
- * 提供对 Doctor 的增、删、改、查等操作。
+ * DoctorService 接口，定义与医生相关的业务逻辑操作。
  */
-@Service
-public class DoctorService {
-
-    @Resource
-    private DoctorMapper doctorMapper;
-    @Resource
-    private ReservationMapper reservationMapper;
+public interface DoctorService {
 
     /**
-     * 添加新的 Doctor 用户。
-     *
-     * @param doctor Doctor 实体
+     * 添加医生
      */
-    public void add(Doctor doctor) {
-        Doctor dbDoctor = doctorMapper.selectByUsername(doctor.getUsername());
-        if (ObjectUtil.isNotNull(dbDoctor)) {
-            throw new CustomException(ResultCodeEnum.USER_EXIST_ERROR);
-        }
-        if (ObjectUtil.isEmpty(doctor.getPassword())) {
-            doctor.setPassword(Constants.USER_DEFAULT_PASSWORD);
-        }
-        if (ObjectUtil.isEmpty(doctor.getName())) {
-            doctor.setName(doctor.getUsername());
-        }
-        if (ObjectUtil.isEmpty(doctor.getStatus())) {
-            doctor.setStatus("待审批");
-        }
-        doctor.setRole(RoleEnum.DOCTOR.name());
-        doctorMapper.insert(doctor);
-    }
-
-    public void updateById(Doctor doctor) {
-        doctorMapper.updateById(doctor);
-    }
-
-    public void deleteById(Integer id) {
-        doctorMapper.deleteById(id);
-    }
-
-    public void deleteBatch(List<Integer> ids) {
-        for (Integer id : ids) {
-            doctorMapper.deleteById(id);
-        }
-    }
-
-    public Doctor selectById(Integer id) {
-        return doctorMapper.selectById(id);
-    }
-
-    public List<Doctor> selectAll(Doctor doctor) {
-        return doctorMapper.selectAll(doctor);
-    }
-
-    public PageInfo<Doctor> selectPage(Doctor doctor, Integer pageNum, Integer pageSize) {
-        PageHelper.startPage(pageNum, pageSize);
-        List<Doctor> list = doctorMapper.selectAll(doctor);
-        return PageInfo.of(list);
-    }
+    void add(Doctor doctor);
 
     /**
-     * 登录
+     * 根据ID删除医生
      */
-    public Doctor login(Account account) {
-        Doctor dbDoctor = doctorMapper.selectByUsername(account.getUsername());
-        if (ObjectUtil.isNull(dbDoctor)) {
-            throw new CustomException(ResultCodeEnum.USER_NOT_EXIST_ERROR);
-        }
-        if (!dbDoctor.getPassword().equals(account.getPassword())) {
-            throw new CustomException(ResultCodeEnum.USER_ACCOUNT_ERROR);
-        }
-        // 生成token
-        String token = TokenUtils.createToken(dbDoctor.getId() + "-" + dbDoctor.getRole(), dbDoctor.getPassword());
-        dbDoctor.setToken(token);
-        return dbDoctor;
-    }
+    void deleteById(Integer id);
 
     /**
-     * 修改密码
+     * 批量删除医生
      */
-    public void updatePassword(Account account) {
-        Doctor dbDoctor = doctorMapper.selectByUsername(account.getUsername());
-        if (ObjectUtil.isNull(dbDoctor)) {
-            throw new CustomException(ResultCodeEnum.USER_NOT_EXIST_ERROR);
-        }
-        if (!account.getPassword().equals(dbDoctor.getPassword())) {
-            throw new CustomException(ResultCodeEnum.PARAM_PASSWORD_ERROR);
-        }
-        dbDoctor.setPassword(account.getNewPassword());
-        doctorMapper.updateById(dbDoctor);
-    }
+    void deleteBatch(List<Integer> ids);
 
-    public void register(Account account) {
-        // 注册的本质就是新增
-        Doctor doctor = new Doctor();
-        BeanUtils.copyProperties(account, doctor);
-        add(doctor);
-    }
+    /**
+     * 更新医生信息
+     */
+    void updateById(Doctor doctor);
 
-    public void submit(Doctor doctor) {
-        doctor.setStatus("待审批");
-        doctorMapper.updateById(doctor);
-    }
+    /**
+     * 提交医生认证信息
+     */
+    void submit(Doctor doctor);
 
-    public List<Doctor> top4() {
-        List<Doctor> doctors = doctorMapper.allPassDoctor();
-        for (Doctor doctor : doctors) {
-            List<Reservation> list = reservationMapper.selectByDoctorIdAndPass(doctor.getId());
-            doctor.setNum(list.size());
-        }
-        return doctors.stream()
-                .sorted(Comparator.comparingInt(Doctor::getNum).reversed())
-                .collect(Collectors.toList());
-    }
+    /**
+     * 根据ID查询医生
+     */
+    Doctor selectById(Integer id);
+
+    /**
+     * 根据用户名查询医生
+     */
+    Doctor selectByUsername(String username);
+
+    /**
+     * 查询所有医生
+     */
+    List<Doctor> selectAll(Doctor doctor);
+
+    /**
+     * 分页查询医生
+     */
+    PageInfo<Doctor> selectPage(Doctor doctor, Integer pageNum, Integer pageSize);
+
+    /**
+     * 获取前4名医生
+     */
+    List<Doctor> top4();
+    
+    /**
+     * 获取指定公司的前4名医生
+     */
+    List<Doctor> top4(Integer companyId);
+    
+    /**
+     * 检查医生是否属于指定公司
+     */
+    boolean checkDoctorCompany(Integer doctorId, Integer companyId);
+    
+    /**
+     * 医生登录
+     */
+    Doctor login(Account account);
+    
+    /**
+     * 医生注册
+     */
+    void register(Account account);
+    
+    /**
+     * 修改医生密码
+     */
+    void updatePassword(Account account);
+
+    /**
+     * 获取医生的公司ID
+     */
+    Integer getDoctorCompanyId(Integer doctorId);
 }

@@ -36,6 +36,20 @@
             </el-select>
           </div>
           
+          <!-- 添加试卷状态筛选 -->
+          <div class="w-32">
+            <el-select
+              v-model="data.status"
+              placeholder="试卷状态"
+              class="w-full"
+              clearable
+            >
+              <el-option label="待审核" value="待审核" />
+              <el-option label="审核通过" value="审核通过" />
+              <el-option label="审核拒绝" value="审核拒绝" />
+            </el-select>
+          </div>
+          
           <el-button 
             type="primary" 
             @click="load"
@@ -130,7 +144,7 @@
           <el-table-column prop="title" label="试卷名称" min-width="150" show-overflow-tooltip />
           <el-table-column prop="content" label="试卷简介" min-width="150" show-overflow-tooltip />
           <el-table-column prop="typeName" label="试卷分类" min-width="120" />
-          <el-table-column prop="doctorName" label="HR姓名" min-width="120" />
+          <el-table-column prop="doctorName" label="医生姓名" min-width="120" />
           <el-table-column prop="doctorAvatar" label="医生头像" width="80" align="center">
             <template #default="scope">
               <el-image 
@@ -293,24 +307,8 @@
           
           <el-form-item prop="img" label="试卷封面" required>
             <div class="flex items-center">
-              <el-upload
-                :action="baseUrl + '/files/upload'"
-                :headers="headers"
-                :on-success="handleFileUpload"
-                :before-upload="beforeImageUpload"
-                list-type="picture-card"
-                :limit="1"
-                :file-list="fileList"
-              >
-                <div class="flex flex-col items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="17 8 12 3 7 8"></polyline>
-                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                  </svg>
-                  <span class="text-xs text-gray-500">上传封面</span>
-                </div>
-              </el-upload>
+              <Upload v-model="data.form.img" />
+              
               <div v-if="data.form.img" class="ml-4 flex items-center text-sm text-gray-500">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
@@ -396,24 +394,27 @@
           <div class="bg-gray-50 p-4 rounded-lg mb-4">
             <h3 class="text-lg font-medium text-gray-800 mb-3">分数区间设置</h3>
             
-            <el-form-item prop="aRange" label="底部区间" required>
-              <div class="flex items-center">
-                <el-input-number 
-                  v-model="data.form.aLeft" 
-                  class="w-32" 
-                  disabled
-                />
-                <span class="mx-4">至</span>
-                <el-input-number 
-                  v-model="data.form.aRight" 
-                  class="w-32" 
-                  @change="calculateBleft"
-                  :min="0"
-                />
-              </div>
+            <el-form-item prop="aLeft" label="底部区间左边界" required>
+              <el-input-number 
+                v-model="data.form.aLeft" 
+                class="w-32" 
+                :min="0"
+                :max="data.form.aRight ? data.form.aRight - 1 : undefined"
+                @change="validateRanges"
+              />
             </el-form-item>
             
-            <el-form-item prop="aAnswer" label="底部解答" required>
+            <el-form-item prop="aRight" label="底部区间右边界" required>
+              <el-input-number 
+                v-model="data.form.aRight" 
+                class="w-32" 
+                :min="data.form.aLeft ? data.form.aLeft + 1 : 1"
+                :max="data.form.bLeft ? data.form.bLeft - 1 : undefined"
+                @change="validateRanges"
+              />
+            </el-form-item>
+            
+            <el-form-item prop="aAnswer" label="底部区间解答" required>
               <el-input 
                 type="textarea" 
                 :rows="3" 
@@ -424,25 +425,27 @@
               ></el-input>
             </el-form-item>
             
-            <el-form-item prop="bRange" label="中部区间" required>
-              <div class="flex items-center">
-                <el-input-number 
-                  v-model="data.form.bLeft" 
-                  class="w-32" 
-                  disabled
-                />
-                <span class="mx-4">至</span>
-                <el-input-number 
-                  v-model="data.form.bRight" 
-                  :max="data.bRightMax" 
-                  class="w-32" 
-                  @change="calculateCleft"
-                  :min="data.form.bLeft || 0"
-                />
-              </div>
+            <el-form-item prop="bLeft" label="中部区间左边界" required>
+              <el-input-number 
+                v-model="data.form.bLeft" 
+                class="w-32" 
+                :min="data.form.aRight ? data.form.aRight + 1 : 1"
+                :max="data.form.bRight ? data.form.bRight - 1 : undefined"
+                @change="validateRanges"
+              />
             </el-form-item>
             
-            <el-form-item prop="bAnswer" label="中部解答" required>
+            <el-form-item prop="bRight" label="中部区间右边界" required>
+              <el-input-number 
+                v-model="data.form.bRight" 
+                class="w-32" 
+                :min="data.form.bLeft ? data.form.bLeft + 1 : 2"
+                :max="data.form.cLeft ? data.form.cLeft - 1 : undefined"
+                @change="validateRanges"
+              />
+            </el-form-item>
+            
+            <el-form-item prop="bAnswer" label="中部区间解答" required>
               <el-input 
                 type="textarea" 
                 :rows="3" 
@@ -453,23 +456,27 @@
               ></el-input>
             </el-form-item>
             
-            <el-form-item prop="cRange" label="顶部区间" required>
-              <div class="flex items-center">
-                <el-input-number 
-                  v-model="data.form.cLeft" 
-                  class="w-32" 
-                  disabled
-                />
-                <span class="mx-4">至</span>
-                <el-input-number 
-                  v-model="data.form.cRight" 
-                  class="w-32" 
-                  disabled
-                />
-              </div>
+            <el-form-item prop="cLeft" label="顶部区间左边界" required>
+              <el-input-number 
+                v-model="data.form.cLeft" 
+                class="w-32" 
+                :min="data.form.bRight ? data.form.bRight + 1 : 2"
+                :max="data.form.cRight ? data.form.cRight - 1 : undefined"
+                @change="validateRanges"
+              />
             </el-form-item>
             
-            <el-form-item prop="cAnswer" label="顶部解答" required>
+            <el-form-item prop="cRight" label="顶部区间右边界" required>
+              <el-input-number 
+                v-model="data.form.cRight" 
+                class="w-32" 
+                :min="data.form.cLeft ? data.form.cLeft + 1 : 3"
+                :max="data.form.score"
+                @change="validateRanges"
+              />
+            </el-form-item>
+            
+            <el-form-item prop="cAnswer" label="顶部区间解答" required>
               <el-input 
                 type="textarea" 
                 :rows="3" 
@@ -571,11 +578,11 @@
   import { reactive, ref, onMounted } from "vue";
   import request from "@/utils/request.js";
   import { ElMessage, ElMessageBox } from "element-plus";
+  import Upload from "@/components/Upload.vue";
   
   const formRef = ref(null);
   const auditFormRef = ref(null);
   const baseUrl = import.meta.env.VITE_BASE_URL;
-  const fileList = ref([]);
   
   // 获取当前用户信息
   const user = JSON.parse(localStorage.getItem('xm-user') || '{}');
@@ -601,6 +608,24 @@
     ],
     num: [
       { required: true, message: '请输入题目数量', trigger: 'blur' }
+    ],
+    aLeft: [
+      { required: true, message: '请输入底部区间左边界', trigger: 'blur' }
+    ],
+    aRight: [
+      { required: true, message: '请输入底部区间右边界', trigger: 'blur' }
+    ],
+    bLeft: [
+      { required: true, message: '请输入中部区间左边界', trigger: 'blur' }
+    ],
+    bRight: [
+      { required: true, message: '请输入中部区间右边界', trigger: 'blur' }
+    ],
+    cLeft: [
+      { required: true, message: '请输入顶部区间左边界', trigger: 'blur' }
+    ],
+    cRight: [
+      { required: true, message: '请输入顶部区间右边界', trigger: 'blur' }
     ],
     aAnswer: [
       { required: true, message: '请输入底部区间解答', trigger: 'blur' }
@@ -632,6 +657,7 @@
     title: '',
     ids: [],
     typeName: '',
+    status: '',
     typeData: [],
     topicData: [],
     bRightMax: 0,
@@ -646,24 +672,61 @@
   };
   
   const calculateTotal = (num) => {
+    if (!num) return;
+    
     data.form.score = num * 10;
-    data.form.cRight = num * 10;
-    data.bRightMax = num * 10 - 1;
-  };
-  
-  const calculateBleft = (num) => {
-    data.form.bLeft = num + 1;
-  };
-  
-  const calculateCleft = (num) => {
-    data.form.cLeft = num + 1;
+    // 重置分数区间，使用默认的60%和80%作为分界点
+    data.form.aLeft = 0;
+    data.form.aRight = Math.floor(data.form.score * 0.6); // 60%
+    data.form.bLeft = data.form.aRight + 1;
+    data.form.bRight = Math.floor(data.form.score * 0.8); // 80%
+    data.form.cLeft = data.form.bRight + 1;
+    data.form.cRight = data.form.score;
   };
   
   const calculateNum = (arr) => {
+    if (!arr || !arr.length) return;
+    
     data.form.num = arr.length;
     data.form.score = arr.length * 10;
-    data.form.cRight = arr.length * 10;
-    data.bRightMax = arr.length * 10 - 1;
+    // 重置分数区间
+    data.form.aLeft = 0;
+    data.form.aRight = Math.floor(data.form.score * 0.6);
+    data.form.bLeft = data.form.aRight + 1;
+    data.form.bRight = Math.floor(data.form.score * 0.8);
+    data.form.cLeft = data.form.bRight + 1;
+    data.form.cRight = data.form.score;
+  };
+  
+  const validateRanges = () => {
+    try {
+        // 确保所有值都存在
+        if (!data.form.score) return;
+        
+        // 确保区间连续且不重叠
+        if (data.form.aRight !== undefined) {
+            data.form.bLeft = data.form.aRight + 1;
+        }
+        if (data.form.bRight !== undefined) {
+            data.form.cLeft = data.form.bRight + 1;
+        }
+        
+        // 确保最高分区间右边界等于总分
+        data.form.cRight = data.form.score;
+        
+        // 验证区间的有效性
+        if (data.form.aLeft >= data.form.aRight ||
+            data.form.bLeft >= data.form.bRight ||
+            data.form.cLeft >= data.form.cRight) {
+            ElMessage.warning('分数区间设置错误：右边界必须大于左边界');
+            return false;
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('验证分数区间时发生错误:', error);
+        return false;
+    }
   };
   
   const loadTopic = async (typeId) => {
@@ -708,7 +771,8 @@
           pageNum: data.pageNum,
           pageSize: data.pageSize,
           title: data.title || undefined,
-          typeName: data.typeName || undefined
+          typeName: data.typeName || undefined,
+          status: data.status || undefined
         }
       });
       
@@ -742,7 +806,6 @@
       flag: flag,
       aLeft: 0
     };
-    fileList.value = [];
     data.formVisible = true;
   };
   
@@ -751,62 +814,48 @@
     data.formVisible2 = true;
   };
   
-  const beforeImageUpload = (file) => {
-    const isImage = file.type.startsWith('image/');
-    const isLt2M = file.size / 1024 / 1024 < 2;
-  
-    if (!isImage) {
-      ElMessage.error('上传试卷封面只能是图片格式!');
-      return false;
-    }
-    if (!isLt2M) {
-      ElMessage.error('上传试卷封面大小不能超过 2MB!');
-      return false;
-    }
-    return true;
-  };
-  
-  const handleFileUpload = (res) => {
-    if (res.code === '200') {
-      data.form.img = res.data;
-      ElMessage.success('封面上传成功');
-    } else {
-      ElMessage.error(res.msg || '封面上传失败');
-    }
-  };
-  
   const save = async () => {
     if (!formRef.value) return;
     
     try {
-      await formRef.value.validate();
-      
-      data.submitting = true;
-      
-      const isUpdate = !!data.form.id;
-      const api = isUpdate ? '/testPaper/update' : '/testPaper/add';
-      const method = isUpdate ? 'put' : 'post';
-      
-      const res = await request[method](api, data.form);
-      
-      if (res.code === '200') {
-        ElMessage({
-          type: 'success',
-          message: isUpdate ? '试卷更新成功' : '试卷添加成功',
-          duration: 2000
-        });
-        data.formVisible = false;
-        load();
-      } else {
-        ElMessage.error(res.msg || '操作失败');
-      }
+        await formRef.value.validate();
+        
+        // 验证分数区间
+        if (!validateRanges()) {
+            return;
+        }
+        
+        // 设置分数区间字符串
+        data.form.aRange = `${data.form.aLeft}~${data.form.aRight}`;
+        data.form.bRange = `${data.form.bLeft}~${data.form.bRight}`;
+        data.form.cRange = `${data.form.cLeft}~${data.form.cRight}`;
+        
+        data.submitting = true;
+        
+        const isUpdate = !!data.form.id;
+        const api = isUpdate ? '/testPaper/update' : '/testPaper/add';
+        const method = isUpdate ? 'put' : 'post';
+        
+        const res = await request[method](api, data.form);
+        
+        if (res.code === '200') {
+            ElMessage({
+                type: 'success',
+                message: isUpdate ? '试卷更新成功' : '试卷添加成功',
+                duration: 2000
+            });
+            data.formVisible = false;
+            load();
+        } else {
+            ElMessage.error(res.msg || '操作失败');
+        }
     } catch (error) {
-      console.error('Form validation or submission error:', error);
-      if (error?.message) {
-        ElMessage.error(error.message);
-      }
+        console.error('Form validation or submission error:', error);
+        if (error?.message) {
+            ElMessage.error(error.message);
+        }
     } finally {
-      data.submitting = false;
+        data.submitting = false;
     }
   };
   
@@ -921,6 +970,7 @@
   const reset = () => {
     data.title = '';
     data.typeName = '';
+    data.status = '';
     data.pageNum = 1;
     load();
   };
@@ -943,11 +993,48 @@
   }
   
   /* Override Element Plus styles to match our design */
+  :deep(.el-button) {
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+  }
+  
+  :deep(.el-button:hover:not(:disabled)) {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
   :deep(.el-button--primary) {
     --el-button-bg-color: #2A5C8A;
     --el-button-border-color: #2A5C8A;
     --el-button-hover-bg-color: #1e4266;
     --el-button-hover-border-color: #1e4266;
+  }
+  
+  :deep(.el-button--success) {
+    --el-button-bg-color: #10b981;
+    --el-button-border-color: #10b981;
+    --el-button-hover-bg-color: #059669;
+    --el-button-hover-border-color: #059669;
+  }
+  
+  :deep(.el-button--danger) {
+    --el-button-bg-color: #ef4444;
+    --el-button-border-color: #ef4444;
+    --el-button-hover-bg-color: #dc2626;
+    --el-button-hover-border-color: #dc2626;
+  }
+  
+  :deep(.el-button--default) {
+    --el-button-hover-bg-color: #f3f4f6;
+    --el-button-hover-border-color: #d1d5db;
+  }
+  
+  :deep(.el-button.is-disabled) {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
   
   :deep(.el-pagination.is-background .el-pager li:not(.is-disabled).is-active) {
@@ -991,14 +1078,5 @@
   
   :deep(.el-table__row:hover) {
     background-color: #f0f7ff !important;
-  }
-  
-  /* Button hover animations */
-  .el-button {
-    transition: transform 0.2s ease;
-  }
-  
-  .el-button:hover:not(:disabled) {
-    transform: translateY(-2px);
   }
   </style>

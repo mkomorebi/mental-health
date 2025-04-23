@@ -190,39 +190,17 @@
             </el-select>
           </el-form-item>
           
-          <el-form-item prop="img" label="封面图片" required>
-            <div class="flex flex-col items-center">
-              <el-upload
-                :action="baseUrl + '/files/upload'"
-                :headers="headers"
-                :on-success="handleFileUpload"
-                :before-upload="beforeImageUpload"
-                list-type="picture-card"
-                :limit="1"
-                :file-list="fileList"
-                class="w-full"
-              >
-                <div class="flex flex-col items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="17 8 12 3 7 8"></polyline>
-                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                  </svg>
-                  <span class="text-xs text-gray-500">上传轮播图</span>
-                </div>
-              </el-upload>
+          <el-form-item prop="img" label="轮播图" required>
+            <div class="flex items-center">
+              <Upload v-model="data.form.img" />
               
-              <div v-if="data.form.img" class="mt-4 text-sm text-gray-500 flex items-center">
+              <div v-if="data.form.img" class="ml-4 flex items-center text-sm text-gray-500">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                   <polyline points="22 4 12 14.01 9 11.01"></polyline>
                 </svg>
-                轮播图已上传
+                图片已上传
               </div>
-              
-              <p class="text-xs text-gray-500 mt-2">
-                建议尺寸: 1200 x 300 像素，格式: JPG/PNG，大小不超过 2MB
-              </p>
             </div>
           </el-form-item>
         </el-form>
@@ -247,9 +225,11 @@
   import { reactive, ref, onMounted } from "vue";
   import request from "@/utils/request.js";
   import { ElMessage, ElMessageBox } from "element-plus";
+  import Upload from "@/components/Upload.vue";
   
   const formRef = ref(null);
-  const baseUrl = import.meta.env.VITE_BASE_URL;
+  const baseUrl = import.meta.env.VITE_APP_BASE_API || 'http://localhost:9090';
+  console.log('Sideshow component baseUrl:', baseUrl);
   const fileList = ref([]);
   
   // 获取当前用户信息
@@ -281,10 +261,15 @@
   
   const loadPropagateData = async () => {
     try {
-      const res = await request.get('/propagate/selectAll');
+      console.log('加载宣传数据...');
+      // 修改为使用带有公司ID过滤的接口
+      const res = await request.get('/propagate/selectByCompany');
+      
+      console.log('宣传数据响应:', res);
       
       if (res.code === '200') {
         data.propagateData = res.data || [];
+        console.log('加载到宣传数据:', data.propagateData.length, '条');
       } else {
         ElMessage.error(res.msg || '加载宣传数据失败');
       }
@@ -297,6 +282,12 @@
   const load = async () => {
     data.loading = true;
     try {
+      console.log('加载轮播图数据，参数:', {
+        pageNum: data.pageNum,
+        pageSize: data.pageSize,
+        propagateTitle: data.propagateTitle || undefined
+      });
+      
       const res = await request.get('/sideshow/selectPage', {
         params: {
           pageNum: data.pageNum,
@@ -305,9 +296,16 @@
         }
       });
       
+      console.log('轮播图数据响应:', res);
+      
       if (res.code === '200') {
         data.tableData = res.data?.list || [];
         data.total = res.data?.total || 0;
+        
+        console.log('加载到轮播图数据:', data.tableData.length, '条');
+        if (data.tableData.length > 0) {
+          console.log('第一条数据:', data.tableData[0]);
+        }
       } else {
         ElMessage.error(res.msg || '加载轮播图数据失败');
       }
@@ -364,47 +362,64 @@
   };
   
   const handleFileUpload = (res) => {
+    console.log('Upload response:', res);
     if (res.code === '200') {
       data.form.img = res.data;
-      ElMessage.success('轮播图上传成功');
+      ElMessage.success('图片上传成功');
     } else {
-      ElMessage.error(res.msg || '轮播图上传失败');
+      ElMessage.error(res.msg || '图片上传失败');
     }
   };
   
+  const handleUploadError = (err) => {
+    console.error('Upload error:', err);
+    ElMessage.error('上传失败: ' + (err.message || '未知错误'));
+  };
+  
   const save = async () => {
-    if (!formRef.value) return;
-    
-    try {
-      await formRef.value.validate();
-      
-      data.submitting = true;
-      
-      const isUpdate = !!data.form.id;
-      const api = isUpdate ? '/sideshow/update' : '/sideshow/add';
-      const method = isUpdate ? 'put' : 'post';
-      
-      const res = await request[method](api, data.form);
-      
-      if (res.code === '200') {
-        ElMessage({
-          type: 'success',
-          message: isUpdate ? '轮播图更新成功' : '轮播图添加成功',
-          duration: 2000
-        });
-        data.formVisible = false;
-        load();
-      } else {
-        ElMessage.error(res.msg || '操作失败');
+    formRef.value.validate(async (valid) => {
+      if (valid) {
+        data.submitting = true;
+        try {
+          // 确保图片URL已正确设置
+          if (!data.form.img) {
+            ElMessage.error('请上传轮播图');
+            data.submitting = false;
+            return;
+          }
+          
+          // 打印表单数据，用于调试
+          console.log('保存轮播图数据:', {
+            id: data.form.id || '新增',
+            propagateId: data.form.propagateId,
+            propagateTitle: data.propagateData.find(p => p.id === data.form.propagateId)?.title || '未知',
+            img: data.form.img
+          });
+          
+          const url = data.form.id ? '/sideshow/update' : '/sideshow/add';
+          const method = data.form.id ? 'put' : 'post';
+          
+          const res = await request[method](url, data.form);
+          console.log('保存响应:', res);
+          
+          if (res.code === '200') {
+            ElMessage.success('保存成功');
+            data.formVisible = false;
+            
+            // 重新加载数据，确保显示最新结果
+            console.log('重新加载数据...');
+            await load();
+          } else {
+            ElMessage.error(res.msg || '保存失败');
+          }
+        } catch (error) {
+          console.error('Save error:', error);
+          ElMessage.error('保存失败: ' + (error.message || '未知错误'));
+        } finally {
+          data.submitting = false;
+        }
       }
-    } catch (error) {
-      console.error('Form validation or submission error:', error);
-      if (error?.message) {
-        ElMessage.error(error.message);
-      }
-    } finally {
-      data.submitting = false;
-    }
+    });
   };
   
   const del = async (id) => {
@@ -492,6 +507,19 @@
   
   // Load data when component is mounted
   onMounted(() => {
+    // 测试上传URL是否正确
+    console.log('Testing upload URL:', `${baseUrl}/files/upload`);
+    
+    // 测试API连接
+    request.get('/test/company-info')
+      .then(res => {
+        console.log('API connection test:', res);
+      })
+      .catch(err => {
+        console.error('API connection test failed:', err);
+      });
+    
+    // 加载数据
     load();
     loadPropagateData();
   });

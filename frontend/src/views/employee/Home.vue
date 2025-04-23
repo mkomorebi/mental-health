@@ -20,7 +20,7 @@
                 '-translate-x-full': index < currentIndex
               }"
             >
-              <div class="relative h-full w-full group cursor-pointer" @click="navTo('/employee/propagateDetail?id=' + item.id)">
+              <div class="relative h-full w-full group cursor-pointer" @click="navTo('/employee/propagateDetail?id=' + item.propagateId)">
                 <img :src="item.img" alt="" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105">
                 <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
                   <h3 class="text-white text-xl font-bold">{{ item.propagateTitle || '心理健康宣传' }}</h3>
@@ -101,7 +101,7 @@
           <!-- 文章列表 -->
           <div class="lg:col-span-2 space-y-4">
             <div 
-              v-for="item in data.propagateData" 
+              v-for="(item, index) in data.propagateData.slice(0, 2)" 
               :key="item.id" 
               class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300 cursor-pointer"
               @click="navTo('/employee/propagateDetail?id=' + item.id)"
@@ -129,6 +129,10 @@
                 </div>
               </div>
             </div>
+            <!-- 如果没有宣传数据，显示占位内容 -->
+            <div v-if="data.propagateData.length === 0" class="bg-white rounded-lg shadow-sm border border-gray-100 p-6 text-center">
+              <div class="text-gray-500">暂无宣传内容</div>
+            </div>
           </div>
 
           <!-- 公告信息 -->
@@ -153,6 +157,10 @@
                     </div>
                   </template>
                 </el-popover>
+                <!-- 如果没有公告数据，显示占位内容 -->
+                <div v-if="data.noticeData.length === 0" class="text-center py-4">
+                  <div class="text-gray-500">暂无公告信息</div>
+                </div>
               </div>
             </div>
           </div>
@@ -307,39 +315,72 @@ const loadTestPaper = () => {
 };
 
 const loadSideshow = () => {
-  request.get('/sideshow/selectAll').then(res => {
+  request.get('/sideshow/selectByCompanyId').then(res => {
     if (res.code === '200') {
-      data.sideshowData = res.data;
+      data.sideshowData = res.data || [];
+      
+      // 确保每个轮播图项目都有propagateId
+      data.sideshowData.forEach(item => {
+        // 如果没有propagateId但有id，则使用id作为propagateId
+        if (!item.propagateId && item.id) {
+          item.propagateId = item.id;
+        }
+      });
+      
       // 数据加载后启动自动播放
       if (data.sideshowData.length > 0) {
         startAutoPlay();
+      } else {
+        console.log('没有找到轮播图数据');
       }
     } else {
-      ElMessage.error(res.msg);
+      console.error('加载轮播图失败:', res.msg);
+      ElMessage.error(res.msg || '加载轮播图失败');
+      // 可以显示一个默认的轮播图或提示
+      data.sideshowData = [];
     }
+  }).catch(err => {
+    console.error('加载轮播图失败:', err);
+    ElMessage.error('加载轮播图失败，请检查网络连接');
+    data.sideshowData = [];
   });
 };
 
 const loadPropagate = () => {
   request.get('/propagate/selectTop3').then(res => {
     if (res.code === '200') {
-      data.propagateData = res.data;
+      // 只取前两条数据
+      data.propagateData = (res.data || []).slice(0, 2);
+      if (data.propagateData.length === 0) {
+        console.log('没有找到宣传数据');
+      }
     } else {
-      ElMessage.error(res.msg);
+      console.error('加载宣传数据失败:', res.msg);
+      ElMessage.error(res.msg || '加载宣传数据失败');
+      data.propagateData = [];
     }
+  }).catch(err => {
+    console.error('加载宣传数据失败:', err);
+    ElMessage.error('加载宣传数据失败，请检查网络连接');
+    data.propagateData = [];
   });
 };
 
 const loadNotice = () => {
   request.get('/notice/selectAll').then(res => {
     if (res.code === '200') {
-      data.noticeData = res.data;
+      data.noticeData = res.data || [];
       if (data.noticeData.length > 6) {
         data.noticeData = data.noticeData.slice(0, 6);
       }
     } else {
-      ElMessage.error(res.msg);
+      ElMessage.error(res.msg || '加载公告失败');
+      data.noticeData = [];
     }
+  }).catch(err => {
+    console.error('加载公告失败:', err);
+    data.noticeData = [];
+    ElMessage.error('加载公告失败，请检查网络连接');
   });
 };
 
@@ -403,12 +444,30 @@ const handleKeyDown = (e) => {
   }
 };
 
+const testCompanyInfo = () => {
+  request.get('/test/company-info').then(res => {
+    if (res.code === '200') {
+      console.log('公司信息测试:', res.data);
+      if (res.data.companyId) {
+        console.log('公司ID正确设置:', res.data.companyId);
+      } else {
+        console.error('未找到公司ID!');
+      }
+    } else {
+      console.error('测试失败:', res.msg);
+    }
+  }).catch(err => {
+    console.error('测试请求失败:', err);
+  });
+};
+
 onMounted(() => {
   loadSideshow();
   loadPropagate();
   loadNotice();
   loadDoctor();
   loadTestPaper();
+  testCompanyInfo();
   
   // 添加键盘事件监听
   window.addEventListener('keydown', handleKeyDown);

@@ -52,7 +52,7 @@
         </div>
   
         <!-- Action Buttons Row -->
-        <div class="flex flex-wrap items-center gap-3 mt-4 pt-3 border-t border-gray-100" v-if="data.user.role === 'ADMIN'">
+        <div class="flex flex-wrap items-center gap-3 mt-4 pt-3 border-t border-gray-100" v-if="data.user.role === 'ADMIN' || data.user.role === 'DOCTOR'">
           <el-button 
             type="primary" 
             @click="handleAdd"
@@ -79,6 +79,20 @@
             </svg>
             批量删除
           </el-button>
+          
+          <!-- 新增类型管理按钮 -->
+          <el-button 
+            type="success" 
+            @click="handleTypeManage"
+            class="bg-emerald-500 hover:bg-emerald-600 border-emerald-500 hover:border-emerald-600 text-white"
+            v-if="data.user.role === 'ADMIN'"
+            >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+            管理题目类型
+          </el-button>
         </div>
       </div>
   
@@ -94,7 +108,7 @@
           element-loading-text="加载中..."
           element-loading-background="rgba(255, 255, 255, 0.8)"
         >
-          <el-table-column type="selection" width="55" v-if="data.user.role === 'ADMIN'" />
+          <el-table-column type="selection" width="55" v-if="data.user.role === 'ADMIN' || data.user.role === 'DOCTOR'" />
           <el-table-column prop="title" label="题目名称" min-width="200" show-overflow-tooltip />
           <el-table-column prop="typeName" label="题目分类" min-width="120" />
           <el-table-column label="选项A" min-width="150">
@@ -143,7 +157,7 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="120" fixed="right" v-if="data.user.role === 'ADMIN'">
+          <el-table-column label="操作" width="120" fixed="right" v-if="data.user.role === 'ADMIN' || data.user.role === 'DOCTOR'">
             <template #default="scope">
               <div class="flex items-center space-x-2">
                 <el-button 
@@ -185,7 +199,7 @@
           </svg>
           <p class="mt-2 text-gray-500">暂无题目数据</p>
           <el-button 
-            v-if="data.user.role === 'ADMIN'"
+            v-if="data.user.role === 'ADMIN' || data.user.role === 'DOCTOR'"
             type="primary" 
             @click="handleAdd" 
             class="mt-4 bg-[#2A5C8A] hover:bg-[#1e4266] border-[#2A5C8A] hover:border-[#1e4266]"
@@ -373,6 +387,124 @@
           </div>
         </template>
       </el-dialog>
+  
+      <!-- 添加类型管理弹窗 -->
+      <el-dialog 
+        v-model="data.typeFormVisible" 
+        title="题目类型管理" 
+        width="600px" 
+        destroy-on-close
+        :close-on-click-modal="false"
+      >
+        <div class="mb-4 flex justify-between items-center">
+          <div class="text-sm text-gray-500">管理题目的分类，添加或修改类型</div>
+          <el-button 
+            type="primary" 
+            @click="handleAddType"
+            class="bg-[#2A5C8A] hover:bg-[#1e4266] border-[#2A5C8A] hover:border-[#1e4266]"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            新增类型
+          </el-button>
+        </div>
+        
+        <el-table 
+          :data="data.typeData" 
+          stripe
+          border
+          class="w-full"
+          v-loading="data.typeLoading"
+          element-loading-text="加载中..."
+          element-loading-background="rgba(255, 255, 255, 0.8)"
+        >
+          <el-table-column prop="title" label="分类标题" min-width="200">
+            <template #default="scope">
+              <div class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-[#2A5C8A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+                <span class="font-medium">{{ scope.row.title }}</span>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="120" fixed="right">
+            <template #default="scope">
+              <div class="flex items-center space-x-2">
+                <el-button 
+                  type="primary" 
+                  circle 
+                  @click="handleEditType(scope.row)"
+                  class="bg-[#2A5C8A] hover:bg-[#1e4266] border-[#2A5C8A] hover:border-[#1e4266]"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                </el-button>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
+        
+        <!-- Empty State for Type Table -->
+        <div v-if="!data.typeLoading && data.typeData.length === 0" class="py-8 text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+          <p class="mt-2 text-gray-500">暂无分类数据</p>
+          <el-button 
+            type="primary" 
+            @click="handleAddType" 
+            class="mt-4 bg-[#2A5C8A] hover:bg-[#1e4266] border-[#2A5C8A] hover:border-[#1e4266]"
+          >
+            添加第一个分类
+          </el-button>
+        </div>
+      </el-dialog>
+  
+      <!-- 类型表单弹窗 -->
+      <el-dialog 
+        v-model="data.typeEditVisible" 
+        :title="data.typeForm.id ? '编辑类型' : '新增类型'" 
+        width="500px" 
+        destroy-on-close
+        :close-on-click-modal="false"
+      >
+        <el-form 
+          ref="typeFormRef" 
+          :model="data.typeForm" 
+          :rules="data.typeRules" 
+          label-width="100px" 
+          class="p-4"
+        >
+          <el-form-item prop="title" label="分类标题" required>
+            <el-input 
+              v-model="data.typeForm.title" 
+              placeholder="请输入分类标题"
+              maxlength="50"
+              show-word-limit
+            ></el-input>
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <el-button @click="data.typeEditVisible = false">取 消</el-button>
+            <el-button 
+              type="primary" 
+              @click="saveType"
+              :loading="data.typeSubmitting"
+              class="bg-[#2A5C8A] hover:bg-[#1e4266] border-[#2A5C8A] hover:border-[#1e4266]"
+            >
+              确 定
+            </el-button>
+          </div>
+        </template>
+      </el-dialog>
     </div>
   </template>
   
@@ -382,6 +514,7 @@
   import { ElMessage, ElMessageBox } from "element-plus";
   
   const formRef = ref();
+  const typeFormRef = ref();
   
   const data = reactive({
     user: JSON.parse(localStorage.getItem('xm-user') || '{}'),
@@ -397,6 +530,13 @@
     typeData: [],
     loading: false,
     submitting: false,
+    
+    typeFormVisible: false,
+    typeEditVisible: false,
+    typeForm: {},
+    typeLoading: false,
+    typeSubmitting: false,
+    
     rules: {
       title: [
         { required: true, message: '请输入题目名称', trigger: 'blur' },
@@ -437,10 +577,18 @@
         { required: true, message: '请输入D选项分数', trigger: 'change' },
         { type: 'number', min: 0, max: 10, message: '分数范围为 0-10', trigger: 'change' }
       ],
+    },
+    
+    typeRules: {
+      title: [
+        { required: true, message: '请输入分类标题', trigger: 'blur' },
+        { min: 2, max: 50, message: '分类标题长度在 2 到 50 个字符', trigger: 'blur' }
+      ]
     }
   });
   
   const loadType = async () => {
+    data.typeLoading = true;
     try {
       const res = await request.get('/type/selectAll');
       
@@ -452,6 +600,8 @@
     } catch (error) {
       console.error('Failed to load type data:', error);
       ElMessage.error('加载分类数据失败，请检查网络连接');
+    } finally {
+      data.typeLoading = false;
     }
   };
   
@@ -624,6 +774,66 @@
     data.typeName = '';
     data.pageNum = 1;
     load();
+  };
+  
+  const handleTypeManage = () => {
+    data.typeFormVisible = true;
+    loadType();
+  };
+  
+  const handleAddType = () => {
+    data.typeForm = {};
+    data.typeEditVisible = true;
+    
+    setTimeout(() => {
+      const firstInput = document.querySelector('.el-dialog input');
+      if (firstInput) firstInput.focus();
+    }, 300);
+  };
+  
+  const handleEditType = (row) => {
+    data.typeForm = JSON.parse(JSON.stringify(row));
+    data.typeEditVisible = true;
+    
+    setTimeout(() => {
+      const firstInput = document.querySelector('.el-dialog input');
+      if (firstInput) firstInput.focus();
+    }, 300);
+  };
+  
+  const saveType = async () => {
+    if (!typeFormRef.value) return;
+    
+    try {
+      await typeFormRef.value.validate();
+      
+      data.typeSubmitting = true;
+      
+      const isUpdate = !!data.typeForm.id;
+      const api = isUpdate ? '/type/update' : '/type/add';
+      const method = isUpdate ? 'put' : 'post';
+      
+      const res = await request[method](api, data.typeForm);
+      
+      if (res.code === '200') {
+        ElMessage({
+          type: 'success',
+          message: isUpdate ? '分类更新成功' : '分类添加成功',
+          duration: 2000
+        });
+        data.typeEditVisible = false;
+        loadType();
+      } else {
+        ElMessage.error(res.msg || '操作失败');
+      }
+    } catch (error) {
+      console.error('Form validation or submission error:', error);
+      if (error?.message) {
+        ElMessage.error(error.message);
+      }
+    } finally {
+      data.typeSubmitting = false;
+    }
   };
   
   // Load data when component is mounted

@@ -6,6 +6,8 @@ import com.example.service.TestPaperService;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
+import com.example.exception.CustomException;
+import com.example.mapper.DoctorMapper;
 
 import java.util.List;
 
@@ -18,6 +20,9 @@ public class TestPaperController {
 
     @Resource
     private TestPaperService testPaperService;
+
+    @Resource
+    private DoctorMapper doctorMapper;
 
     /**
      * 新增试卷
@@ -42,8 +47,14 @@ public class TestPaperController {
      */
     @DeleteMapping("/delete/{id}")
     public Result delete(@PathVariable Integer id) {
-        testPaperService.deleteById(id);
-        return Result.success();
+        try {
+            testPaperService.deleteById(id);
+            return Result.success();
+        } catch (CustomException e) {
+            return Result.error(e.getCode(), e.getMessage());
+        } catch (Exception e) {
+            return Result.error("500", "删除失败：" + e.getMessage());
+        }
     }
 
     /**
@@ -60,8 +71,14 @@ public class TestPaperController {
      */
     @GetMapping("/selectById/{id}")
     public Result selectById(@PathVariable Integer id) {
-        TestPaper testPaper = testPaperService.selectById(id);
-        return Result.success(testPaper);
+        try {
+            TestPaper testPaper = testPaperService.selectById(id);
+            return Result.success(testPaper);
+        } catch (CustomException e) {
+            return Result.error(e.getCode(), e.getMessage());
+        } catch (Exception e) {
+            return Result.error("500", "查询失败：" + e.getMessage());
+        }
     }
 
     /**
@@ -89,7 +106,13 @@ public class TestPaperController {
     public Result selectPage(TestPaper testPaper,
                              @RequestParam(defaultValue = "1") Integer pageNum,
                              @RequestParam(defaultValue = "10") Integer pageSize) {
-        PageInfo<TestPaper> pageInfo = testPaperService.selectPage(testPaper, pageNum, pageSize);
-        return Result.success(pageInfo);
+        try {
+            PageInfo<TestPaper> pageInfo = testPaperService.selectPage(testPaper, pageNum, pageSize);
+            return Result.success(pageInfo);
+        } catch (CustomException e) {
+            return Result.error(e.getCode(), e.getMessage());
+        } catch (Exception e) {
+            return Result.error("500", "查询失败：" + e.getMessage());
+        }
     }
 }

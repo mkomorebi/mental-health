@@ -1,6 +1,7 @@
 package com.example.mapper;
 
 import com.example.entity.Type;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
@@ -15,10 +16,10 @@ public interface TypeMapper {
 
     void updateById(Type type); // 根据 ID 更新 Type 记录
 
-    void deleteById(Integer id); // 根据 ID 删除 Type 记录
+    void deleteById(@Param("id") Integer id, @Param("companyId") Integer companyId); // 根据 ID 和公司ID删除 Type 记录
 
-    @Select("select * from `type` where id = #{id}")
-    Type selectById(Integer id); // 根据 ID 查询 Type 记录
+    @Select("select * from `type` where id = #{id} and (company_id = #{companyId} or #{companyId} is null)")
+    Type selectById(@Param("id") Integer id, @Param("companyId") Integer companyId); // 根据 ID 和公司ID查询 Type 记录
 
     List<Type> selectAll(Type type); // 查询所有 Type 记录
 

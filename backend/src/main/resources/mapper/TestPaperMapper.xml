@@ -4,7 +4,10 @@
 <mapper namespace="com.example.mapper.TestPaperMapper">
 
     <select id="selectAll" resultType="com.example.entity.TestPaper">
-        select test_paper.*, type.title as typeName, doctor.name as doctorName, doctor.avatar as doctorAvatar from `test_paper`
+        select test_paper.*, type.title as typeName, 
+               doctor.name as doctorName, doctor.avatar as doctorAvatar,
+               doctor.company_id as companyId 
+        from `test_paper`
         left join type on test_paper.type_id = type.id
         left join doctor on test_paper.doctor_id = doctor.id
         <where>
@@ -12,6 +15,7 @@
             <if test="doctorId != null"> and test_paper.doctor_id = #{doctorId}</if>
             <if test="status != null"> and test_paper.status = #{status}</if>
             <if test="title != null"> and test_paper.title like concat('%', #{title}, '%')</if>
+            <if test="companyId != null"> and doctor.company_id = #{companyId}</if>
         </where>
         order by id desc
     </select>

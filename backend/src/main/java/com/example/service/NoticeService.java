@@ -7,6 +7,8 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import com.auth0.jwt.JWT;
+import com.example.utils.TokenUtils;
 
 import java.util.List;
 
@@ -19,6 +21,12 @@ public class NoticeService {
 
     @Resource
     private NoticeMapper noticeMapper;
+
+    @Resource
+    private EmployeeService employeeService;
+
+    @Resource
+    private AdminService adminService;
 
     /**
      * 添加新的 Notice 记录。
@@ -44,8 +52,43 @@ public class NoticeService {
         }
     }
 
+    /**
+     * 根据ID查询公告，并进行公司隔离
+     */
     public Notice selectById(Integer id) {
-        return noticeMapper.selectById(id);
+        Notice notice = noticeMapper.selectById(id);
+        
+        // 获取当前用户信息
+        String token = TokenUtils.getToken();
+        if (token != null && !token.isEmpty()) {
+            try {
+                String audience = JWT.decode(token).getAudience().get(0);
+                if (audience != null && audience.contains("-")) {
+                    String role = audience.split("-")[1];
+                    String userId = audience.split("-")[0];
+                    
+                    // 如果是员工，需要验证公告是否属于员工所在公司
+                    if ("USER".equals(role) && notice != null) {
+                        Integer employeeId = Integer.valueOf(userId);
+                        Integer employeeCompanyId = employeeService.getEmployeeCompanyId(employeeId);
+                        
+                        // 获取公告所属公司ID
+                        Integer noticeCompanyId = adminService.getAdminCompanyId(notice.getAdminId());
+                        
+                        // 如果员工公司ID与公告公司ID不匹配，返回null或抛出异常
+                        if (employeeCompanyId == null || noticeCompanyId == null || 
+                            !employeeCompanyId.equals(noticeCompanyId)) {
+                            return null; // 或抛出无权限异常
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // 记录异常，但不影响请求继续处理
+                System.err.println("解析token失败: " + e.getMessage());
+            }
+        }
+        
+        return notice;
     }
 
     public List<Notice> selectAll(Notice notice) {

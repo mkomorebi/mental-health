@@ -16,6 +16,7 @@ public class Admin extends Account {
     private String phone; // 电话
     private String email; // 邮箱
     private Integer companyId; // 公司ID
+    private String companyName; // 公司名称
 
     public Integer getId() {
         return id;
@@ -87,5 +88,13 @@ public class Admin extends Account {
 
     public void setCompanyId(Integer companyId) {
         this.companyId = companyId;
+    }
+
+    public String getCompanyName() {
+        return companyName;
+    }
+
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
     }
 }

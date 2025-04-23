@@ -6,31 +6,46 @@
 
     <!-- 插入部门 -->
     <insert id="insert" parameterType="com.example.entity.Department" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO department (name) VALUES (#{name});
+        INSERT INTO department (name, company_id) VALUES (#{name}, #{companyId});
     </insert>
 
     <!-- 根据 ID 更新部门 -->
     <update id="updateById" parameterType="com.example.entity.Department">
-        UPDATE department SET name = #{name} WHERE id = #{id};
+        UPDATE department SET name = #{name}
+        <if test="companyId != null">
+            , company_id = #{companyId}
+        </if>
+        WHERE id = #{id}
+        <if test="companyId != null">
+            AND company_id = #{companyId}
+        </if>
     </update>
 
     <!-- 根据 ID 删除部门 -->
-    <delete id="deleteById" parameterType="int">
-        DELETE FROM department WHERE id = #{id};
+    <delete id="deleteById">
+        DELETE FROM department WHERE id = #{id}
+        <if test="companyId != null">
+            AND company_id = #{companyId}
+        </if>
     </delete>
 
-    <!-- 查询某个部门下的所有部门 -->
+    <!-- 查询部门列表 -->
     <select id="list" resultType="com.example.entity.Department">
         SELECT * FROM department
         <where>
             <if test="name != null and name != ''">
                 AND name LIKE CONCAT('%', #{name}, '%')
             </if>
+            <if test="companyId != null">
+                AND company_id = #{companyId}
+            </if>
         </where>
+        ORDER BY id DESC
     </select>
 
-    <!-- 查询所有部门 -->
     <select id="alllist" resultType="com.example.entity.Department">
-        SELECT * FROM department
+        SELECT * FROM department 
+        WHERE company_id = #{companyId}
+        ORDER BY id DESC
     </select>
 </mapper>

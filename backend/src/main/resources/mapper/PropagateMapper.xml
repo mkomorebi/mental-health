@@ -1,31 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.mapper.PropagateMapper">
 
     <select id="selectAll" resultType="com.example.entity.Propagate">
-        select propagate.*, doctor.name as doctorName, doctor.avatar as doctorAvatar from `propagate`
-        left join doctor on propagate.doctor_id = doctor.id
+        select p.*, d.name as doctorName, d.avatar as doctorAvatar, pt.tag as tag
+        from propagate p
+        left join doctor d on p.doctor_id = d.id
+        left join propagate_tag pt on p.tag_id = pt.id
         <where>
-            <if test="title != null"> and title like concat('%', #{title}, '%')</if>
-            <if test="doctorId != null"> and doctor_id = #{doctorId}</if>
-            <if test="tag != null"> and tag like concat('%', #{tag}, '%')</if>
+            <if test="id != null"> and p.id = #{id}</if>
+            <if test="doctorId != null"> and p.doctor_id = #{doctorId}</if>
+            <if test="title != null and title != ''"> and p.title like concat('%', #{title}, '%')</if>
+            <if test="content != null and content != ''"> and p.content like concat('%', #{content}, '%')</if>
+            <if test="tag != null and tag != ''"> and pt.tag like concat('%', #{tag}, '%')</if>
+            <if test="tagId != null"> and p.tag_id = #{tagId}</if>
+            <if test="companyId != null"> and d.company_id = #{companyId}</if>
+            <if test="doctorName != null and doctorName != ''"> and d.name like concat('%', #{doctorName}, '%')</if>
+            <if test="status != null and status != ''"> and p.status = #{status}</if>
         </where>
-        <if test="orderBy != null and orderType != null">
-            order by ${orderBy} ${orderType}
-        </if>
-        <if test="orderBy == null or orderType == null">
-            order by time desc
-        </if>
+        <choose>
+            <when test="orderBy != null and orderType != null">
+                order by p.${orderBy} ${orderType}
+            </when>
+            <otherwise>
+                order by p.id desc
+            </otherwise>
+        </choose>
     </select>
 
     <delete id="deleteById">
-        delete from `propagate`
+        delete from propagate
         where id = #{id}
     </delete>
 
-    <insert id="insert" parameterType="com.example.entity.Propagate" useGeneratedKeys="true">
-        insert into `propagate`
+    <insert id="insert" parameterType="com.example.entity.Propagate" useGeneratedKeys="true" keyProperty="id">
+        insert into propagate
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">id,</if>
             <if test="title != null">title,</if>
@@ -34,7 +45,8 @@
             <if test="doctorId != null">doctor_id,</if>
             <if test="img != null">img,</if>
             <if test="num != null">num,</if>
-            <if test="tag != null">tag,</if>
+            <if test="tagId != null">tag_id,</if>
+            <if test="status != null">status,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null">#{id},</if>
@@ -44,12 +56,13 @@
             <if test="doctorId != null">#{doctorId},</if>
             <if test="img != null">#{img},</if>
             <if test="num != null">#{num},</if>
-            <if test="tag != null">#{tag},</if>
+            <if test="tagId != null">#{tagId},</if>
+            <if test="status != null">#{status},</if>
         </trim>
     </insert>
 
     <update id="updateById" parameterType="com.example.entity.Propagate">
-        update `propagate`
+        update propagate
         <set>
             <if test="title != null">
                 title = #{title},
@@ -66,9 +79,40 @@
             <if test="num != null">
                 num = #{num},
             </if>
-            <if test="tag !=null">tag=#{tag}</if>
+            <if test="tagId != null">
+                tag_id = #{tagId},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
         </set>
         where id = #{id}
     </update>
+
+    <select id="selectById" resultType="com.example.entity.Propagate">
+        select p.*, d.name as doctorName, d.avatar as doctorAvatar, pt.tag as tag
+        from propagate p
+        left join doctor d on p.doctor_id = d.id
+        left join propagate_tag pt on p.tag_id = pt.id
+        where p.id = #{id}
+    </select>
+
+    <select id="selectAllTags" resultType="java.lang.String">
+        select distinct tag from propagate_tag where tag is not null and tag != ''
+    </select>
+
+    <select id="selectTop3" resultType="com.example.entity.Propagate">
+        select p.*, d.name as doctorName, d.avatar as doctorAvatar, pt.tag as tag
+        from propagate p
+        left join doctor d on p.doctor_id = d.id
+        left join propagate_tag pt on p.tag_id = pt.id
+        <where>
+            <if test="companyId != null">
+                and d.company_id = #{companyId}
+            </if>
+            and p.status = 'APPROVED'
+        </where>
+        order by p.num desc limit 3
+    </select>
 
 </mapper>

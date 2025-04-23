@@ -92,7 +92,35 @@
           ></el-input>
         </el-form-item>
 
-          <el-form-item prop="seniority" label="你的工龄" required>
+        <el-form-item prop="certificate" label="资质证书" required>
+          <div class="certificate-upload-container">
+            <el-upload
+              :action="baseUrl + '/files/upload'"
+              :headers="headers"
+              :on-success="handleCertificateUpload"
+              :before-upload="beforeCertificateUpload"
+              :on-remove="handleCertificateRemove"
+              :on-exceed="handleExceed"
+              :file-list="certificateFiles"
+              :limit="3"
+              class="certificate-uploader"
+            >
+              <el-button type="primary" :disabled="certificateFiles.length >= 3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                上传证书
+              </el-button>
+            </el-upload>
+            <p class="text-xs text-gray-500 mt-2">
+              请上传执业证书和专业资质文件，支持PDF格式，最多上传3个文件，单个文件不超过5MB
+            </p>
+          </div>
+        </el-form-item>
+
+        <el-form-item prop="seniority" label="你的工龄" required>
           <el-input-number  
             v-model="data.user.seniority" 
             :min="1" 
@@ -165,6 +193,9 @@ const userRef = ref();
 const user = JSON.parse(localStorage.getItem('xm-user') || '{}');
 const headers = { token: user.token };
 
+// 证书文件列表
+const certificateFiles = ref([]);
+
 const data = reactive({
   user: JSON.parse(localStorage.getItem('xm-user') || '{}'),
   loading: false, // 是否显示加载动画
@@ -184,6 +215,9 @@ const data = reactive({
     content: [
       { required: true, message: '请填写医生简介', trigger: 'blur' },
       { min: 10, max: 500, message: '简介长度在 10 到 500 个字符', trigger: 'blur' }
+    ],
+    certificate: [
+      { required: true, message: '请上传资质证书', trigger: 'change' }
     ],
     seniority: [
       { required: true, message: '请填写医生工龄', trigger: 'change' },
@@ -268,11 +302,104 @@ const handleFileUpload = (res) => {
   }
 };
 
+// 证书上传前的验证
+const beforeCertificateUpload = (file) => {
+  const isPDF = file.type === 'application/pdf';
+  const isLt5M = file.size / 1024 / 1024 < 5;
+
+  if (!isPDF) {
+    ElMessage.error('证书只能是PDF格式!');
+    return false;
+  }
+  if (!isLt5M) {
+    ElMessage.error('证书大小不能超过 5MB!');
+    return false;
+  }
+  return true;
+};
+
+// 处理证书上传成功
+const handleCertificateUpload = (res, file) => {
+  if (res.code === '200') {
+    // 将文件添加到列表中
+    const fileUrl = typeof res.data === 'object' ? (res.data.url || res.data.path) : res.data;
+    
+    // 更新证书文件列表
+    certificateFiles.value.push({
+      name: file.name,
+      url: fileUrl
+    });
+    
+    // 更新用户证书字段，使用JSON字符串存储多个文件URL
+    data.user.certificate = JSON.stringify(certificateFiles.value.map(f => f.url));
+    
+    ElMessage.success('证书上传成功');
+  } else {
+    ElMessage.error(res.msg || '证书上传失败');
+  }
+};
+
+// 处理证书文件移除
+const handleCertificateRemove = (file) => {
+  // 从列表中移除文件
+  const index = certificateFiles.value.findIndex(f => f.url === file.url);
+  if (index !== -1) {
+    certificateFiles.value.splice(index, 1);
+    // 更新用户证书字段
+    data.user.certificate = certificateFiles.value.length > 0 
+      ? JSON.stringify(certificateFiles.value.map(f => f.url)) 
+      : '';
+  }
+};
+
+// 处理超出上传限制
+const handleExceed = () => {
+  ElMessage.warning('最多只能上传3个证书文件');
+};
+
+// 组件挂载时，初始化证书文件列表
+if (data.user.certificate) {
+  try {
+    // 尝试解析已有的证书JSON字符串
+    const certificates = JSON.parse(data.user.certificate);
+    if (Array.isArray(certificates)) {
+      certificateFiles.value = certificates.map((url, index) => ({
+        name: `证书文件${index + 1}`,
+        url: url
+      }));
+    } else if (typeof data.user.certificate === 'string') {
+      // 如果是单个URL字符串，转换为数组
+      certificateFiles.value = [{
+        name: '证书文件1',
+        url: data.user.certificate
+      }];
+      // 更新为JSON格式
+      data.user.certificate = JSON.stringify([data.user.certificate]);
+    }
+  } catch (e) {
+    // 如果解析失败，可能是旧格式，转换为新格式
+    if (typeof data.user.certificate === 'string') {
+      certificateFiles.value = [{
+        name: '证书文件1',
+        url: data.user.certificate
+      }];
+      // 更新为JSON格式
+      data.user.certificate = JSON.stringify([data.user.certificate]);
+    }
+  }
+}
+
 const emit = defineEmits(['updateUser']);
 
 const update = async () => {
   if (data.user.role !== 'DOCTOR') {
     ElMessage.warning('只有医生角色可以提交认证信息');
+    return;
+  }
+  
+  // 验证是否上传了证书
+  if (!data.user.certificate || certificateFiles.value.length === 0) {
+    ElMessage.warning('请上传至少一个资质证书');
     return;
   }
   
@@ -289,6 +416,9 @@ const update = async () => {
     const res = await request.put('/doctor/submit', data.user);
     
     if (res.code === '200') {
+      // 更新本地状态
+      data.user.status = '待审批';
+      
       ElMessage({
         type: 'success',
         message: '提交成功，等待管理员审批',
@@ -406,5 +536,40 @@ const update = async () => {
 :deep(.el-button.is-disabled) {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.certificate-uploader {
+  width: 100%;
+}
+
+.certificate-uploader .el-upload-list {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.certificate-upload-container {
+  width: 100%;
+}
+
+/* 文件列表样式优化 */
+:deep(.el-upload-list__item) {
+  transition: all 0.3s;
+}
+
+:deep(.el-upload-list__item:hover) {
+  background-color: #f0f7ff;
+}
+
+:deep(.el-upload-list__item-name) {
+  color: #2A5C8A;
+}
+
+:deep(.el-upload-list__item .el-icon--close) {
+  color: #ef4444;
+}
+
+/* 上传按钮样式 */
+:deep(.certificate-uploader .el-upload) {
+  width: 100%;
 }
 </style>

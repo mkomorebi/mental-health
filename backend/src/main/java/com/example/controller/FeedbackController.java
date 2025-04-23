@@ -1,12 +1,14 @@
 package com.example.controller;
 
 import com.example.common.Result;
+import com.example.entity.Account;
 import com.example.entity.Feedback;
 import com.example.service.FeedbackService;
+import com.example.utils.TokenUtils;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
-
+import com.example.common.enums.RoleEnum;
 import java.util.List;
 
 /**
@@ -48,6 +50,34 @@ public class FeedbackController {
      */
     @DeleteMapping("/delete/{id}")
     public Result delete(@PathVariable Integer id) {
+        // 获取当前用户
+        Account currentUser = TokenUtils.getCurrentUser();
+        // 获取要删除的反馈
+        Feedback feedback = feedbackService.selectById(id);
+        
+        if (feedback == null) {
+            return Result.error("404", "反馈不存在");
+        }
+        
+        // 检查权限
+        if (RoleEnum.USER.name().equals(currentUser.getRole())) {
+            // 普通用户只能删除自己的反馈
+            if (!feedback.getUserId().equals(currentUser.getId())) {
+                return Result.error("403", "无权删除他人的反馈");
+            }
+        } else if (RoleEnum.ADMIN.name().equals(currentUser.getRole())) {
+            // 管理员只能删除自己公司的员工的反馈
+            // 这里需要通过用户ID查询用户所属公司，然后比较
+            Integer companyId = (Integer) TokenUtils.getRequest().getAttribute("companyId");
+            if (companyId != null) {
+                // 通过反馈的用户ID查询该用户所属的公司
+                Integer feedbackUserCompanyId = feedbackService.getUserCompanyId(feedback.getUserId());
+                if (feedbackUserCompanyId != null && !companyId.equals(feedbackUserCompanyId)) {
+                    return Result.error("403", "无权删除其他公司的反馈");
+                }
+            }
+        }
+        
         feedbackService.deleteById(id);
         return Result.success();
     }

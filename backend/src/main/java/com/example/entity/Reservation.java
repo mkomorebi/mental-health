@@ -7,7 +7,7 @@ import java.util.List;
  */
 public class Reservation {
     private Integer id; // 预约ID
-    private Integer userId; // 用户ID
+    private Integer userId; // 用户ID，对应数据库中的 employee_id
     private Integer doctorId; // 医生ID
     private String start; // 预约开始时间
     private String end; // 预约结束时间
@@ -20,6 +20,12 @@ public class Reservation {
 
     private String userName; // 用户姓名
     private String doctorName; // 医生姓名
+
+    private Integer companyId; // 添加公司ID字段
+    
+    // 添加查询用的日期范围字段
+    private String startDate; // 开始日期
+    private String endDate; // 结束日期
 
     public Integer getId() {
         return id;
@@ -115,5 +121,29 @@ public class Reservation {
 
     public void setTimeRange(List<String> timeRange) {
         this.timeRange = timeRange;
+    }
+
+    public Integer getCompanyId() {
+        return companyId;
+    }
+
+    public void setCompanyId(Integer companyId) {
+        this.companyId = companyId;
+    }
+
+    public String getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(String startDate) {
+        this.startDate = startDate;
+    }
+
+    public String getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(String endDate) {
+        this.endDate = endDate;
     }
 }
